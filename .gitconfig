@@ -1,0 +1,16 @@
+[user]
+	name = gavinzhou
+	email = gavin.zhou@gmail.com
+
+[alias]
+    br = branch
+    ba = branch -a
+    co = checkout
+    st = status
+[push]
+	default = simple
+
+[core]
+    editor = "code --wait"
+[color]
+        ui = true
