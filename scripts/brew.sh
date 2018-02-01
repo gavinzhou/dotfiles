@@ -39,6 +39,7 @@ caskapps=(
     appcleaner
     visual-studio-code
     google-chrome
+    google-japanese-ime
     cmd-eikana
     iterm2
     qq
