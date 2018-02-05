@@ -28,6 +28,4 @@ alias k=kubectl
 #set env
 export GOPATH=$HOME/go
 export PATH=$GOPATH/bin:/usr/local/opt/gettext/bin:$PATH
-export NVM_DIR="$HOME/.nvm"
-. "/usr/local/opt/nvm/nvm.sh"
 EOF

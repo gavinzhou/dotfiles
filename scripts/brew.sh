@@ -26,7 +26,6 @@ apps=(
     zsh-completions
     cfssl
     go
-    nvm
     glide
     httpie
     ccat
