@@ -10,7 +10,7 @@ DOTFILES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Package managers & packages
 . "$DOTFILES_DIR/scripts/script.sh"
 . "$DOTFILES_DIR/scripts/brew.sh"
-. "$DOTFILES_DIR/scripts/prezto.zsh"
+zsh "$DOTFILES_DIR/scripts/prezto.zsh"
 
 # git config
 ln -s .gitconfig ~/.gitconfig
