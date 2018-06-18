@@ -46,6 +46,7 @@ caskapps=(
     qq
     clipy
     slack
+    insomnia
 )
 
 caskfont=(
