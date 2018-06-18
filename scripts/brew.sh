@@ -33,6 +33,7 @@ apps=(
     fd
     optipng
     zsh
+    python
 )
 
 caskapps=(
@@ -58,3 +59,6 @@ brew cask install --appdir="/Applications" "${caskapps[@]}"
 brew cask install "${caskfont[@]}"
 brew cleanup
 brew cask cleanup
+
+ln -s /usr/local/bin/python3 /usr/local/bin/python
+ln -s /usr/local/bin/pip3 /usr/local/bin/pip
