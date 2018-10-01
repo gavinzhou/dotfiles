@@ -21,7 +21,6 @@ brew upgrade --all
 # Install packages
 apps=(
     wget
-    brew-cask
     mackup
     zsh-completions
     cfssl
@@ -54,12 +53,6 @@ caskfont=(
 )
 
 brew install "${apps[@]}"
-brew tap caskroom/versions
-brew cask update
-brew cask install --appdir="/Applications" "${caskapps[@]}"
+brew cask install "${caskapps[@]}"
 brew cask install "${caskfont[@]}"
 brew cleanup
-brew cask cleanup
-
-ln -s /usr/local/bin/python3 /usr/local/bin/python
-ln -s /usr/local/bin/pip3 /usr/local/bin/pip
