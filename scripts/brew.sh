@@ -32,7 +32,7 @@ apps=(
     fd
     optipng
     zsh
-    python
+    hub
 )
 
 caskapps=(
