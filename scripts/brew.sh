@@ -33,6 +33,7 @@ apps=(
     optipng
     zsh
     hub
+    ripgrep
 )
 
 caskapps=(
