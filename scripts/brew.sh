@@ -34,6 +34,9 @@ apps=(
     zsh
     hub
     ripgrep
+    git-secrets
+    gnupg
+    pinentry-mac
 )
 
 caskapps=(
@@ -47,6 +50,7 @@ caskapps=(
     clipy
     slack
     insomnia
+    keybase
 )
 
 caskfont=(
