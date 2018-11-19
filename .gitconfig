@@ -1,6 +1,7 @@
 [user]
-	name = gavinzhou
-	email = gavin.zhou@gmail.com
+        name = gavinzhou
+        email = gavin.zhou@gmail.com
+        signingkey = 90F49BD18C277F9E
 
 [alias]
     br = branch
@@ -8,9 +9,13 @@
     co = checkout
     st = status
 [push]
-	default = simple
+        default = simple
 
 [core]
     editor = "code --wait"
 [color]
         ui = true
+[commit]
+        gpgsign = true
+[gpg]
+        program = /usr/local/bin/gpg
