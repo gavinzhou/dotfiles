@@ -17,18 +17,4 @@ zsh "$DOTFILES_DIR/scripts/prezto.zsh"
 
 # git config
 ln -s .gitconfig ~/.gitconfig
-mkdir -p ~/go
-
-cat << EOF >> ~/.zshrc
-HISTSIZE=1000000
-SAVEHIST=1000000
-HISTFILE=~/.zsh_history
-
-#alias list
-alias cat=ccat
-alias k=kubectl
-
-#set env
-export GOPATH=$HOME/go
-export PATH=$GOPATH/bin:/usr/local/opt/gettext/bin:$PATH
-EOF
+mkdir -p ${HOME}/go
