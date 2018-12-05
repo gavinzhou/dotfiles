@@ -14,6 +14,14 @@ DOTFILES_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 . "$DOTFILES_DIR/scripts/macos.sh"
 zsh "$DOTFILES_DIR/scripts/prezto.zsh"
 
-# git config
-ln -s .gitconfig ~/.gitconfig
+# sync dot file to home directory
+function doIt() {
+    rsync   .zshrc \
+        .aliases \
+        .gitconfig \
+        .zpreztorc \
+        ~/;
+}
+sudo -v
+doIt;
 mkdir -p ${HOME}/go

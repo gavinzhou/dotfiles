@@ -1,7 +1,7 @@
 [user]
         name = gavinzhou
         email = gavin.zhou@gmail.com
-        signingkey = 90F49BD18C277F9E
+        signingkey = C2B45BC4
 
 [alias]
     br = branch
