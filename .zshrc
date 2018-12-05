@@ -16,10 +16,7 @@ SAVEHIST=1000000
 HISTFILE=~/.zsh_history
 
 #alias list
-alias cat=ccat
-alias k=kubectl
-alias git=hub
-alias ccv="circleci config validate"
+source ~/.aliases
 
 #gpg
 GPG_TTY=$(tty)

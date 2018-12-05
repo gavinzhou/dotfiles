@@ -1,0 +1,4 @@
+alias cat=ccat
+alias k=kubectl
+alias git=hub
+alias ccv="circleci config validate"
