@@ -19,6 +19,7 @@ function doIt() {
         .aliases \
         .gitconfig \
         .zpreztorc \
+        .digrc \
         ~/;
 }
 sudo -v
