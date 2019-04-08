@@ -23,7 +23,7 @@ GPG_TTY=$(tty)
 export GPG_TTY
 
 #set env
-export GOPATH=/Users/gavin/go
+export GOPATH=${HOME}/go
 export GO111MODULE=on
 export PATH=~/go/bin:~/Library/Python/3.7/bin:~/google-cloud-sdk/bin:/bin:/usr/local/opt/gettext/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
 
