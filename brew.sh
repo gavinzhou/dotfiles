@@ -10,6 +10,7 @@ apps=(
     mackup
     zsh-completions
     cfssl
+    circleci
     golang
     glide
     httpie
