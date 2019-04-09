@@ -5,14 +5,13 @@ brew upgrade
 
 # Install packages
 apps=(
+    awscli
     n
     wget
-    mackup
     zsh-completions
     cfssl
     circleci
     golang
-    glide
     httpie
     ccat
     gzip
