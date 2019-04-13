@@ -23,6 +23,7 @@ apps=(
     git-secrets
     gnupg
     pinentry-mac
+    peco
 )
 
 caskapps=(
