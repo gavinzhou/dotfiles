@@ -6,24 +6,25 @@ brew upgrade
 # Install packages
 apps=(
     awscli
-    n
-    wget
-    zsh-completions
+    ccat
     cfssl
     circleci
-    golang
-    httpie
-    ccat
-    gzip
     fd
-    optipng
-    zsh
-    hub
-    ripgrep
     git-secrets
     gnupg
-    pinentry-mac
+    golang
+    gzip
+    httpie
+    hub
+    jq
+    n
+    optipng
     peco
+    pinentry-mac
+    ripgrep
+    wget
+    zsh
+    zsh-completions
 )
 
 caskapps=(
