@@ -2,3 +2,7 @@ alias cat=ccat
 alias k=kubectl
 alias git=hub
 alias ccv="circleci config validate"
+alias abt="ssh ubuntu@54.200.58.161"
+alias k=kubectl
+alias kc=kubectx
+alias kn=kubens
