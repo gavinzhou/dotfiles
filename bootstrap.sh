@@ -15,6 +15,8 @@ function doIt() {
         .zpreztorc \
         .digrc \
         ~/;
+    rsync gpg-agent.conf \
+        ~/.gnupg;
 }
 sudo -v
 doIt;
