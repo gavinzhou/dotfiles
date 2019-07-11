@@ -48,7 +48,6 @@ export PATH=$HOME/.gloo/bin:$PATH
 export PATH=/usr/local/kubebuilder/bin:$PATH
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init -)"
-eval "$(pyenv virtualenv-init -)"
 export PYENV_VIRTUALENV_DISABLE_PROMPT=1
 export PATH=$PATH:/usr/local/kubebuilder/bin
+source <(kubectl completion zsh)
