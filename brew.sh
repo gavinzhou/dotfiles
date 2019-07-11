@@ -36,7 +36,6 @@ caskapps=(
     google-japanese-ime
     cmd-eikana
     iterm2
-    qq
     clipy
     slack
     insomnia
