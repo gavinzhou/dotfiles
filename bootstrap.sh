@@ -16,7 +16,7 @@ function doIt() {
         .digrc \
         ~/;
     rsync gpg-agent.conf \
-        ~/.gnupg;
+        ~/.gnupg/;
 }
 sudo -v
 doIt;
