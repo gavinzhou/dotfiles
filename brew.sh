@@ -27,9 +27,6 @@ apps=(
     zsh-completions
     kubectl
     kubectx
-)
-
-caskapps=(
     google-chrome
     appcleaner
     visual-studio-code
@@ -40,14 +37,8 @@ caskapps=(
     slack
     insomnia
     keybase
-    google-cloud-sdk
+    google-cloud-sdk    
 )
 
-#caskfont=(
-#    font-source-code-pro
-#)
-
 brew install "${apps[@]}"
-brew cask install "${caskapps[@]}"
-#brew cask install "${caskfont[@]}"
 brew cleanup
