@@ -45,9 +45,15 @@ export PATH="/usr/local/opt/redis@3.2/bin:$PATH"
 export PATH="/usr/local/opt/icu4c/bin:$PATH"
 export PATH="/usr/local/opt/icu4c/sbin:$PATH"
 export PATH=$HOME/.gloo/bin:$PATH
-export PATH=/usr/local/kubebuilder/bin:$PATH
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
 export PYENV_VIRTUALENV_DISABLE_PROMPT=1
-export PATH=$PATH:/usr/local/kubebuilder/bin
+export PATH=$PATH:$HOME/bin
 source <(kubectl completion zsh)
+export PATH="/usr/local/opt/libpq/bin:$PATH"
+export PATH="/usr/local/opt/python@3.8/bin:$PATH"
+export PATH="${PATH}:${HOME}/.krew/bin"
+export PATH=$(brew --prefix openvpn)/sbin:$PATH
+export PATH=/Users/gavin/.daml/bin:$PATH
+
+source /usr/local/etc/bash_completion.d/az

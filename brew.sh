@@ -47,11 +47,8 @@ caskapps=(
     google-cloud-sdk
     wechat
     microsoft-teams
+    google-cloud-sdk
 )
-
-#caskfont=(
-#    font-source-code-pro
-#)
 
 brew install "${apps[@]}"
 brew install --cask "${caskapps[@]}"
