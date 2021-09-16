@@ -27,6 +27,10 @@ apps=(
     zsh-completions
     kubectl
     kubectx
+    homebrew/cask
+    openvpn
+    azure-cli
+    zoom
 )
 
 caskapps=(
@@ -41,6 +45,8 @@ caskapps=(
     insomnia
     keybase
     google-cloud-sdk
+    wechat
+    microsoft-teams
 )
 
 #caskfont=(
@@ -48,6 +54,7 @@ caskapps=(
 #)
 
 brew install "${apps[@]}"
-brew cask install "${caskapps[@]}"
+brew install --cask "${caskapps[@]}"
+#brew install "${caskapps[@]}"
 #brew cask install "${caskfont[@]}"
 brew cleanup
