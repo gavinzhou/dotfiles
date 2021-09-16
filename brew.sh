@@ -27,6 +27,13 @@ apps=(
     zsh-completions
     kubectl
     kubectx
+    homebrew/cask
+    openvpn
+    azure-cli
+    zoom
+)
+
+caskapps=(
     google-chrome
     appcleaner
     visual-studio-code
@@ -37,8 +44,14 @@ apps=(
     slack
     insomnia
     keybase
-    google-cloud-sdk    
+    google-cloud-sdk
+    wechat
+    microsoft-teams
+    google-cloud-sdk
 )
 
 brew install "${apps[@]}"
+brew install --cask "${caskapps[@]}"
+#brew install "${caskapps[@]}"
+#brew cask install "${caskfont[@]}"
 brew cleanup
