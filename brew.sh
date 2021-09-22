@@ -31,6 +31,10 @@ apps=(
     openvpn
     azure-cli
     zoom
+    tanka
+    jsonnet
+    helm
+    eksctl
 )
 
 caskapps=(

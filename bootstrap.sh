@@ -23,5 +23,6 @@ doIt;
 mkdir -p ${HOME}/go
 
 \curl -sSL https://get.rvm.io | bash
+GO111MODULE="on" go get github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb
 
 zsh "prezto.zsh"
