@@ -35,6 +35,7 @@ apps=(
     jsonnet
     helm
     eksctl
+    helmfile
 )
 
 caskapps=(
