@@ -5,7 +5,9 @@ brew upgrade
 
 # Install packages
 apps=(
+    kubectx
     awscli
+    hub
     ccat
     cfssl
     circleci
@@ -53,6 +55,8 @@ caskapps=(
     wechat
     microsoft-teams
     google-cloud-sdk
+    brave-browser
+    firefox
 )
 
 brew install "${apps[@]}"
