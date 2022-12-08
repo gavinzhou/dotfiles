@@ -5,3 +5,6 @@
 hidutil property --set '{"UserKeyMapping":[{"HIDKeyboardModifierMappingSrc":0x700000039,"HIDKeyboardModifierMappingDst":0x7000000E0}]}'
 
 defaults -currentHost write -g com.apple.mouse.tapBehavior 1
+
+defaults write com.googlecode.iterm2.plist PrefsCustomFolder -string "https://raw.githubusercontent.com/gavinzhou/dotfiles/master/com.googlecode.iterm2.plist"
+defaults write com.googlecode.iterm2.plist LoadPrefsFromCustomFolder -bool true
