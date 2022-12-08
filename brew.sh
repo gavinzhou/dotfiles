@@ -6,6 +6,7 @@ brew upgrade
 # Install packages
 apps=(
     kubectx
+    kubectl
     awscli
     hub
     ccat

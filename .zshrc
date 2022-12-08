@@ -40,6 +40,7 @@ if [ -f '/usr/local/Caskroom/google-cloud-sdk/latest/google-cloud-sdk/completion
 export N_PREFIX="$HOME/n"; [[ :$PATH: == *":$N_PREFIX/bin:"* ]] || PATH+=":$N_PREFIX/bin"  # Added by n-install (see http://git.io/n-install-repo).
 
 # Add RVM to PATH for scripting. Make sure this is the last PATH variable change.
+export PATH="/opt/homebrew/bin:$PATH"
 export PATH="$PATH:$HOME/.rvm/bin"
 export PATH="/usr/local/opt/redis@3.2/bin:$PATH"
 export PATH="/usr/local/opt/icu4c/bin:$PATH"
