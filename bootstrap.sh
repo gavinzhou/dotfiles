@@ -2,9 +2,17 @@
 
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
+sudo -v
+
+brew update
+brew upgrade
+
+bash "macos.sh"
+
 # Package managers & packages
-. "brew.sh"
-. "macos.sh"
+export PATH="/opt/homebrew/bin:$PATH"
+bash "brew.sh"
+bash "brew-cask.sh"
 
 
 # sync dot file to home directory
@@ -15,16 +23,8 @@ function doIt() {
         .zpreztorc \
         .digrc \
         ~/;
-    rsync gpg-agent.conf \
-        ~/.gnupg/;
 }
-sudo -v
 doIt;
-mkdir -p ${HOME}/go
-
-\curl -sSL https://get.rvm.io | bash
-go get github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb
-go get github.com/brancz/gojsontoyaml
 
 zsh "prezto.zsh"
 

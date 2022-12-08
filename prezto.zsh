@@ -8,4 +8,4 @@ for rcfile in "${ZDOTDIR:-$HOME}"/.zprezto/runcoms/^README.md(.N); do
   ln -s "$rcfile" "${ZDOTDIR:-$HOME}/.${rcfile:t}"
 done
 
-sudo chsh -s /usr/local/bin/zsh $USER
+sudo chsh -s /bin/zsh $USER

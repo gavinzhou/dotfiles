@@ -57,4 +57,3 @@ export PATH="${PATH}:${HOME}/.krew/bin"
 export PATH=$(brew --prefix openvpn)/sbin:$PATH
 export PATH=/Users/gavin/.daml/bin:$PATH
 
-source /usr/local/etc/bash_completion.d/az
