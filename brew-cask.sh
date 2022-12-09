@@ -2,14 +2,11 @@
 
 caskapps=(
     google-chrome
-    appcleaner
     visual-studio-code
     google-japanese-ime
     cmd-eikana
-    iterm2
     clipy
     slack
-    insomnia
     keybase
     google-cloud-sdk
     wechat
@@ -17,7 +14,7 @@ caskapps=(
     google-cloud-sdk
     brave-browser
     firefox
-    qingg
+    warp
 )
 
 brew install --cask "${caskapps[@]}"

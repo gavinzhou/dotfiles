@@ -3,10 +3,7 @@
 # Install packages
 apps=(
     awscli
-    hub
-    ccat
     cfssl
-    circleci
     fd
     git-secrets
     gnupg
