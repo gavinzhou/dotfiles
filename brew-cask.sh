@@ -14,7 +14,7 @@ caskapps=(
     google-cloud-sdk
     brave-browser
     firefox
-    warp
+    iterm2
 )
 
 brew install --cask "${caskapps[@]}"
