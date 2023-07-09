@@ -29,6 +29,11 @@ apps=(
     helm
     eksctl
     helmfile
+    cmd-eikana
+    clipy
+    slack
+    keybase
+    microsoft-teams    
 )
 
 brew install "${apps[@]}"

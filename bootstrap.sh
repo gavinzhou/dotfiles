@@ -29,3 +29,7 @@ doIt;
 zsh "prezto.zsh"
 
 sudo spctl --master-disable
+cp com.keyboard.macos.plist ~/Library/LaunchAgents/
+cp com.tapbehavior.macos.plist ~/Library/LaunchAgents/
+rm ~/Library/Preferences/com.googlecode.iterm2.plist
+cp com.googlecode.iterm2.plist ~/Library/Preferences/
