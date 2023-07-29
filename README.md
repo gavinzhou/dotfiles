@@ -55,5 +55,5 @@ git config --global gpg.program $(which gpg)
 ### 確認
 
 ```sh
-git commmit -S
+git commit -S
 ```
