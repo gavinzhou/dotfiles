@@ -9,6 +9,7 @@ caskapps=(
     firefox
     iina
     microsoft-edge
+    squirrel
 )
 
 brew install --cask "${caskapps[@]}"
