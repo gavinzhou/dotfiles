@@ -21,18 +21,10 @@ apps=(
     zsh-completions
     kubectl
     kubectx
-    openvpn
-    azure-cli
     zoom
-    tanka
-    jsonnet
-    helm
-    eksctl
     helmfile
-    cmd-eikana
     clipy
     slack
-    keybase
     microsoft-teams    
 )
 

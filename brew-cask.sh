@@ -6,10 +6,10 @@ caskapps=(
     google-japanese-ime
     wechat
     google-cloud-sdk
-    firefox
     iina
     microsoft-edge
     squirrel
+    karabiner-elements
 )
 
 brew install --cask "${caskapps[@]}"
