@@ -1,0 +1,27 @@
+# Managed by chezmoi (github.com/gavinzhou/dotfiles).
+[user]
+	name = gavinzhou
+	email = gavin.zhou@gmail.com
+
+[alias]
+	br = branch
+	ba = branch -a
+	co = checkout
+	st = status
+
+[core]
+	editor = vim
+
+[push]
+	default = simple
+
+[color]
+	ui = true
+
+[credential "https://github.com"]
+	helper =
+	helper = !/opt/homebrew/bin/gh auth git-credential
+
+[credential "https://gist.github.com"]
+	helper =
+	helper = !/opt/homebrew/bin/gh auth git-credential

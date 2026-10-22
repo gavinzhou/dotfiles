@@ -1,0 +1,87 @@
+<svg viewBox="0 0 360 712" width="360" height="712" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="mac-bootstrap-title mac-bootstrap-desc">
+  <title id="mac-bootstrap-title">一条命令初始化 Mac</title>
+  <desc id="mac-bootstrap-desc">运行一条 chezmoi 命令后，自动装 Homebrew 和 1Password，然后写入配置、装软件、写系统设置、装语言版本、建 agent 环境；之后每天定时自动更新和检查。</desc>
+  <style>
+    .bg { fill: #ffffff; }
+    .node { fill: #f5f5f5; stroke: #2d3142; stroke-width: 1; }
+    .timer { fill: #f5f5f5; stroke: #2d3142; stroke-width: 1; stroke-dasharray: 5 4; }
+    .focal { fill: rgba(191,69,32,0.08); stroke: #bf4520; stroke-width: 1.4; }
+    .you { fill: rgba(46,90,168,0.08); stroke: #2e5aa8; stroke-width: 1.2; }
+    .mask { fill: #ffffff; }
+    .arrow { stroke: #4f5d75; stroke-width: 1.2; fill: none; }
+    .dash { stroke: #4f5d75; stroke-width: 1.2; fill: none; stroke-dasharray: 5 4; }
+    .head { fill: #4f5d75; }
+    .name { fill: #2d3142; font-family: 'Geist', 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif; font-size: 14px; font-weight: 600; }
+    .sub { fill: #5a6580; font-family: 'Geist Mono', ui-monospace, 'SF Mono', monospace; font-size: 10px; }
+    .label { fill: #4f5d75; font-family: 'Geist', 'PingFang SC', 'Noto Sans SC', sans-serif; font-size: 12px; font-weight: 500; }
+    .rule { stroke: #bfc0c0; stroke-width: 1; }
+    @media (prefers-color-scheme: dark) {
+      .bg, .mask { fill: #2d3142; }
+      .node, .timer { fill: #393e53; stroke: #f5f5f5; }
+      .focal { fill: rgba(240,138,89,0.10); stroke: #f08a59; }
+      .you { fill: rgba(115,159,223,0.10); stroke: #739fdf; }
+      .arrow, .dash { stroke: #bfc0c0; }
+      .head { fill: #bfc0c0; }
+      .name { fill: #f5f5f5; }
+      .sub { fill: #949eb2; }
+      .label { fill: #bfc0c0; }
+      .rule { stroke: rgba(191,192,192,0.25); }
+    }
+  </style>
+  <defs>
+    <marker id="mb-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon class="head" points="0 0, 8 3, 0 6"/></marker>
+  </defs>
+  <rect class="bg" width="360" height="712"/>
+
+  <line class="arrow" x1="180" y1="72"  x2="180" y2="99"  marker-end="url(#mb-arrow)"/>
+  <line class="arrow" x1="180" y1="148" x2="180" y2="175" marker-end="url(#mb-arrow)"/>
+  <line class="arrow" x1="180" y1="224" x2="180" y2="251" marker-end="url(#mb-arrow)"/>
+  <line class="arrow" x1="180" y1="300" x2="180" y2="327" marker-end="url(#mb-arrow)"/>
+  <line class="arrow" x1="180" y1="376" x2="180" y2="403" marker-end="url(#mb-arrow)"/>
+  <line class="arrow" x1="180" y1="452" x2="180" y2="479" marker-end="url(#mb-arrow)"/>
+  <line class="dash"  x1="180" y1="528" x2="180" y2="579" marker-end="url(#mb-arrow)"/>
+  <rect class="mask" x="188" y="546" width="56" height="16"/>
+  <text class="label" x="192" y="558">以后每天</text>
+
+  <rect class="node" x="40" y="24" width="280" height="48" rx="24"/>
+  <text class="name" x="180" y="45" text-anchor="middle">全新的 Mac</text>
+  <text class="sub" x="180" y="61" text-anchor="middle">Apple ID 已登录</text>
+
+  <rect class="you" x="40" y="100" width="280" height="48" rx="6"/>
+  <text class="name" x="180" y="121" text-anchor="middle">运行一条命令</text>
+  <text class="sub" x="180" y="137" text-anchor="middle">chezmoi init --apply gavinzhou</text>
+
+  <rect class="node" x="40" y="176" width="280" height="48" rx="6"/>
+  <text class="name" x="180" y="197" text-anchor="middle">自动装 Homebrew 和 1Password</text>
+  <text class="sub" x="180" y="213" text-anchor="middle">.install-prereqs.sh</text>
+
+  <rect class="focal" x="40" y="252" width="280" height="48" rx="6"/>
+  <text class="name" x="180" y="273" text-anchor="middle">自动写入配置文件</text>
+  <text class="sub" x="180" y="289" text-anchor="middle">.zshrc · .gitconfig · .mise.toml</text>
+
+  <rect class="node" x="40" y="328" width="280" height="48" rx="6"/>
+  <text class="name" x="180" y="349" text-anchor="middle">自动装软件和系统设置</text>
+  <text class="sub" x="180" y="365" text-anchor="middle">brew bundle · defaults write</text>
+
+  <rect class="node" x="40" y="404" width="280" height="48" rx="6"/>
+  <text class="name" x="180" y="425" text-anchor="middle">自动装语言版本、建 agent 环境</text>
+  <text class="sub" x="180" y="441" text-anchor="middle">mise install · ~/Code · memory</text>
+
+  <rect class="node" x="40" y="480" width="280" height="48" rx="24"/>
+  <text class="name" x="180" y="501" text-anchor="middle">完成</text>
+  <text class="sub" x="180" y="517" text-anchor="middle">chezmoi doctor</text>
+
+  <rect class="timer" x="40" y="580" width="280" height="48" rx="6"/>
+  <text class="name" x="180" y="601" text-anchor="middle">自动更新，有差异就发通知</text>
+  <text class="sub" x="180" y="617" text-anchor="middle">launchd · dotfiles-sync</text>
+
+  <line class="rule" x1="24" y1="656" x2="336" y2="656"/>
+  <rect class="node" x="24" y="678" width="16" height="12" rx="2"/>
+  <text class="label" x="46" y="689">自动</text>
+  <rect class="you" x="96" y="678" width="16" height="12" rx="2"/>
+  <text class="label" x="118" y="689">你动手</text>
+  <rect class="focal" x="184" y="678" width="16" height="12" rx="2"/>
+  <text class="label" x="206" y="689">核心</text>
+  <rect class="timer" x="256" y="678" width="16" height="12" rx="2"/>
+  <text class="label" x="278" y="689">定时</text>
+</svg>

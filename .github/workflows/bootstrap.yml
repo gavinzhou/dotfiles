@@ -1,0 +1,48 @@
+name: bootstrap
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install chezmoi
+        run: brew install chezmoi
+
+      - name: Check script syntax
+        run: |
+          for f in .install-prereqs.sh run_*.sh; do bash -n "$f"; done
+          for f in run_*.tmpl; do chezmoi --source "$PWD" execute-template < "$f" | bash -n; done
+          # shellcheck disable=SC2016
+          sed -n '/^cat > "$bin" <<.EOF./,/^EOF$/p' run_onchange_after_50-dotfiles-sync.sh | sed '1d;$d' | bash -n
+          zsh -n dot_zshrc
+
+      - name: Check Brewfile parses
+        run: brew bundle list --all --file=Brewfile > /dev/null
+
+      # Same as the README one-liner, minus the curl install and the full
+      # Brewfile (Android Studio, KiCad and friends take too long on CI).
+      - name: Apply dotfiles
+        run: |
+          chezmoi init --source "$PWD" --apply --exclude scripts --no-tty
+          chezmoi --source "$PWD" execute-template < run_onchange_after_30-mise.sh.tmpl > "$RUNNER_TEMP/mise.sh"
+          brew install mise
+          bash "$RUNNER_TEMP/mise.sh"
+          bash run_after_40-agents.sh
+
+      - name: Verify result
+        run: |
+          test -f ~/.zshrc && test -f ~/.gitconfig && test -f ~/.mise.toml
+          test -x /opt/homebrew/bin/op
+          test -d ~/Code/gavin
+          test -x ~/.local/bin/claude
+          CLAUDECODE=1 zsh -f -c 'source ~/.zshrc; command -v node && command -v python && command -v terraform'

@@ -1,9 +1,0 @@
-alias k=kubectl
-alias git=hub
-alias ccv="circleci config validate"
-alias kc=kubectx
-alias kn=kubens
-alias rspi="ssh pi@192.168.0.42"
-alias allvpn="sudo openvpn --config ${HOME}/.gavin.ovpn --redirect-gateway def1"
-alias vpn="sudo openvpn --config ${HOME}/.gavin.ovpn"
-alias vault="cd \"$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/Gavin\""
