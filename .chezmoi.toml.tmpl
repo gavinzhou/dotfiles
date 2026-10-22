@@ -1,3 +1,7 @@
+# The repo lives at ~/Code/gavin/dotfiles (one clone per repo), not in
+# chezmoi's default ~/.local/share/chezmoi.
+sourceDir = {{ .chezmoi.sourceDir | quote }}
+
 # Runs before chezmoi reads the source state, so a fresh Mac gets Homebrew
 # and 1Password before any template asks 1Password for a secret.
 [hooks.read-source-state.pre]

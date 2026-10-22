@@ -7,7 +7,7 @@ Gavin 的 Mac 配置，由 [chezmoi](https://www.chezmoi.io/) 管理。
 登录 Apple ID 后，在终端运行：
 
 ```sh
-sh -c "$(curl -fsLS get.chezmoi.io)" -- -b ~/.local/bin init --apply --use-builtin-git true gavinzhou
+sh -c "$(curl -fsLS get.chezmoi.io)" -- -b ~/.local/bin init --apply --use-builtin-git true --source ~/Code/gavin/dotfiles gavinzhou
 ```
 
 <img src="mac-bootstrap.svg" alt="一条命令初始化 Mac 的流程" width="360">

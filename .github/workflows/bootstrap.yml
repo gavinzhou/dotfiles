@@ -23,7 +23,7 @@ jobs:
           for f in .install-prereqs.sh run_*.sh; do bash -n "$f"; done
           for f in run_*.tmpl; do chezmoi --source "$PWD" execute-template < "$f" | bash -n; done
           # shellcheck disable=SC2016
-          sed -n '/^cat > "$bin" <<.EOF./,/^EOF$/p' run_onchange_after_50-dotfiles-sync.sh | sed '1d;$d' | bash -n
+          sed -n '/^cat > "$bin.new" <<.EOF./,/^EOF$/p' run_onchange_after_50-dotfiles-sync.sh | sed '1d;$d' | bash -n
           zsh -n dot_zshrc
 
       - name: Check Brewfile parses

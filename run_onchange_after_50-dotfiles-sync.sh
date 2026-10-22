@@ -6,22 +6,38 @@ bin="$HOME/.local/bin/dotfiles-sync"
 plist="$HOME/Library/LaunchAgents/com.gavinzhou.dotfiles-sync.plist"
 mkdir -p "$(dirname "$bin")" "$(dirname "$plist")" "$HOME/Library/Logs"
 
-cat > "$bin" <<'EOF'
+# Write to a temp file and rename: a running dotfiles-sync keeps reading the
+# old file, so updating itself mid-run cannot corrupt it.
+cat > "$bin.new" <<'EOF'
 #!/bin/bash
 # Daily: pull dotfiles, apply them if this Mac has no local edits, and send a
 # notification when the Mac and the repo disagree. Log: ~/Library/Logs/dotfiles-sync.log
 set -uo pipefail
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/bin:/bin:/usr/sbin:/sbin"
 export MISE_GLOBAL_CONFIG_FILE="$HOME/.mise.toml"
+# Tells the installer script not to restart this job while it is running.
+export DOTFILES_SYNC_RUNNING=1
 
 notes=()
 note() { notes+=("$1"); echo "$(date '+%F %T') $1"; }
 
-# Files edited on this Mac since the last apply. Pulling first would mix them
-# up with incoming changes, so count before pulling.
-local_edits=$(chezmoi status --exclude=scripts 2>/dev/null | grep -c .)
+# Files edited on this Mac since the last apply: chezmoi status puts those in
+# the first column (the second column is changes still waiting in the repo).
+if status=$(chezmoi status --exclude=scripts 2>/dev/null); then
+  local_edits=$(grep -c '^[^ ]' <<<"$status")
+else
+  local_edits=-1
+fi
 
-if ! chezmoi git -- pull --ff-only --quiet; then
+# The source is the working clone in ~/Code. Only apply reviewed master, never
+# a feature branch or uncommitted work in progress.
+src=$(chezmoi source-path)
+branch=$(git -C "$src" symbolic-ref --short HEAD 2>/dev/null)
+if [[ $branch != master ]] || [[ -n $(git -C "$src" status --porcelain) ]]; then
+  note "dotfiles 仓库不在 master 或有未提交的文件，今天没有自动更新"
+elif (( local_edits < 0 )); then
+  note "chezmoi status 运行失败，今天没有自动更新"
+elif ! git -C "$src" pull --ff-only --quiet; then
   note "拉取 dotfiles 仓库失败"
 elif (( local_edits > 0 )); then
   note "本机有 ${local_edits} 个配置文件被改过，没有自动更新。运行 chezmoi diff 查看"
@@ -29,7 +45,7 @@ elif ! chezmoi apply --no-tty; then
   note "自动更新失败，运行 chezmoi apply 查看原因"
 fi
 
-brewfile="$(chezmoi source-path)/Brewfile"
+brewfile="$src/Brewfile"
 extra=$(brew bundle cleanup --file="$brewfile" 2>/dev/null | grep -vE '^(Would|Run) ' | grep -c .)
 if (( extra > 0 )); then
   note "有 ${extra} 项软件或 tap 不在 Brewfile 里。运行 brew bundle cleanup --file=${brewfile} 查看"
@@ -45,9 +61,10 @@ else
   echo "$(date '+%F %T') ok"
 fi
 EOF
-chmod 755 "$bin"
+chmod 755 "$bin.new"
+mv -f "$bin.new" "$bin"
 
-cat > "$plist" <<EOF
+cat > "$plist.new" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -73,5 +90,18 @@ cat > "$plist" <<EOF
 </plist>
 EOF
 
-launchctl bootout "gui/$UID" "$plist" 2>/dev/null || true
+label=com.gavinzhou.dotfiles-sync
+if cmp -s "$plist.new" "$plist" && launchctl print "gui/$UID/$label" >/dev/null 2>&1; then
+  rm -f "$plist.new"
+  exit 0
+fi
+mv -f "$plist.new" "$plist"
+
+# Restarting the job from inside itself would kill this apply. launchd loads
+# the new plist at the next login instead.
+if [[ -n ${DOTFILES_SYNC_RUNNING:-} ]]; then
+  echo "dotfiles: dotfiles-sync schedule changed; it takes effect at next login" >&2
+  exit 0
+fi
+launchctl bootout "gui/$UID/$label" 2>/dev/null || true
 launchctl bootstrap "gui/$UID" "$plist"
