@@ -39,13 +39,22 @@ if [[ $branch != master ]] || [[ -n $(git -C "$src" status --porcelain 2>&1) ]];
   exit 0
 fi
 
-# New commits on origin/master that are not signed by Gavin's 1Password key
-# (~/.git_allowed_signers). Only signed commits are applied, so a stolen
-# GitHub login alone cannot run code on this Mac.
+# New commits on origin/master that are not SSH-signed by Gavin's 1Password
+# key (~/.git_allowed_signers). Only signed commits are applied, so a stolen
+# GitHub login alone cannot run code on this Mac. OpenPGP and X.509
+# signatures are refused outright (GitHub signs its web merges with OpenPGP),
+# and any git error makes the whole check fail.
 count_unsigned() {
-  local c n=0
-  for c in $(git -C "$src" rev-list HEAD..origin/master); do
-    git -C "$src" verify-commit "$c" >/dev/null 2>&1 || n=$((n + 1))
+  local commits c n=0
+  commits=$(git -C "$src" rev-list HEAD..origin/master) || return 1
+  for c in $commits; do
+    if git -C "$src" cat-file commit "$c" | grep -q '^gpgsig -----BEGIN SSH SIGNATURE-----$' &&
+      git -C "$src" -c gpg.ssh.allowedSignersFile="$HOME/.git_allowed_signers" \
+        -c gpg.program=/usr/bin/false -c gpg.x509.program=/usr/bin/false \
+        verify-commit "$c" >/dev/null 2>&1; then
+      continue
+    fi
+    n=$((n + 1))
   done
   echo "$n"
 }
@@ -65,7 +74,9 @@ elif (( local_edits > 0 )); then
   note "本机有 ${local_edits} 个配置文件被改过，没有自动更新。运行 chezmoi diff 查看"
 elif ! git -C "$src" fetch --quiet origin master; then
   note "拉取 dotfiles 仓库失败"
-elif (( (unsigned = $(count_unsigned)) > 0 )); then
+elif ! unsigned=$(count_unsigned); then
+  note "检查提交签名时出错，没有自动更新"
+elif (( unsigned > 0 )); then
   note "仓库有 ${unsigned} 个新提交没有你的签名，没有自动更新。确认后在仓库里运行 git merge --ff-only origin/master，再运行 chezmoi apply"
 elif ! git -C "$src" merge --ff-only --quiet origin/master; then
   note "合并仓库更新失败，没有自动更新"
