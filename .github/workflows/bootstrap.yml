@@ -49,4 +49,4 @@ jobs:
           test -f ~/.zshenv && test -f ~/.zprofile
           # Agents run `zsh -c` / `zsh -lc`: both must see mise tools and agent settings
           CLAUDECODE=1 zsh -c 'command -v node && command -v python && command -v terraform && [[ $PAGER == cat ]]'
-          CODEX_SANDBOX=seatbelt zsh -lc 'command -v node && [[ :$PATH: == *:$HOME/.local/bin:* ]] && [[ $GIT_EDITOR == true ]]'
+          CODEX_SANDBOX=seatbelt zsh -lc 'command -v node && [[ :$PATH: == *:$HOME/.local/bin:* ]] && [[ $GIT_EDITOR == false ]]'

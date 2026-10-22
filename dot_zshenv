@@ -7,12 +7,12 @@
 #
 
 # AI agent CLIs (Claude Code, Codex, ...). Set AGENT_SHELL=1 to force agent
-# mode elsewhere.
-if [[ -n "$CLAUDECODE" || -n "$CODEX_SANDBOX" || -n "$CODEX_THREAD_ID" || -n "$AGENT_SHELL" ]]; then
+# mode elsewhere, AGENT_SHELL=0 to turn it off.
+if [[ ${AGENT_SHELL:-} != 0 ]] && [[ -n ${CLAUDECODE:-} || -n ${CODEX_SANDBOX:-} || -n ${CODEX_THREAD_ID:-} || -n ${AGENT_SHELL:-} ]]; then
   export AGENT_SHELL=1
 fi
 
-export LANG=en_US.UTF-8
+export LANG=${LANG:-en_US.UTF-8}
 export EDITOR=vim
 
 export GOPATH=${HOME}/go
@@ -33,47 +33,57 @@ export HOMEBREW_NO_AUTO_UPDATE=1
 # PATH: earlier entries win, duplicates are dropped, and (N-/) keeps only
 # directories that exist, so stale tool paths do nothing. mise shims come
 # early so agents get the same node/python/terraform as interactive shells.
-# ~/.zprofile sources this file again because /etc/zprofile reorders PATH.
-typeset -U path
-path=(
-  $HOME/.local/bin(N-/)
-  $HOME/.local/share/mise/shims(N-/)
-  $HOME/bin(N-/)
-  $BUN_INSTALL/bin(N-/)
-  /opt/homebrew/opt/openjdk@25/bin(N-/)
-  $ANDROID_HOME/platform-tools(N-/)
-  $ANDROID_HOME/emulator(N-/)
-  $ANDROID_HOME/cmdline-tools/latest/bin(N-/)
-  $HOME/.daml/bin(N-/)
-  /opt/homebrew/opt/openvpn/sbin(N-/)
-  /opt/homebrew/opt/libpq/bin(N-/)
-  $HOME/.gloo/bin(N-/)
-  $GOBIN(N-/)
-  /opt/homebrew/bin(N-/)
-  /opt/homebrew/sbin(N-/)
-  /usr/local/bin
-  /usr/bin
-  /bin
-  /usr/sbin
-  /sbin
-  $HOME/.krew/bin(N-/)
-  $HOME/.platformio/penv/bin(N-/)
-  /Applications/Keybase.app/Contents/SharedSupport/bin(N-/)
-)
-export PATH
+# Directories already on PATH that are not listed here (a virtualenv, a
+# project's node_modules/.bin) are kept after these.
+_dotfiles_path() {
+  typeset -gU path
+  path=(
+    $HOME/.local/bin(N-/)
+    $HOME/.local/share/mise/shims(N-/)
+    $HOME/bin(N-/)
+    $BUN_INSTALL/bin(N-/)
+    /opt/homebrew/opt/openjdk@25/bin(N-/)
+    $ANDROID_HOME/platform-tools(N-/)
+    $ANDROID_HOME/emulator(N-/)
+    $ANDROID_HOME/cmdline-tools/latest/bin(N-/)
+    $HOME/.daml/bin(N-/)
+    /opt/homebrew/opt/openvpn/sbin(N-/)
+    /opt/homebrew/opt/libpq/bin(N-/)
+    $HOME/.gloo/bin(N-/)
+    $GOBIN(N-/)
+    /opt/homebrew/share/google-cloud-sdk/bin(N-/)
+    /opt/homebrew/bin(N-/)
+    /opt/homebrew/sbin(N-/)
+    /usr/local/bin
+    /usr/bin
+    /bin
+    /usr/sbin
+    /sbin
+    $HOME/.krew/bin(N-/)
+    $HOME/.platformio/penv/bin(N-/)
+    /Applications/Keybase.app/Contents/SharedSupport/bin(N-/)
+    $path
+  )
+  export PATH
+}
+# Set PATH once in the outermost shell; nested shells keep what they inherit.
+# ~/.zprofile calls _dotfiles_path again because /etc/zprofile reorders PATH.
+if [[ -z ${DOTFILES_PATH_SET:-} ]]; then
+  _dotfiles_path
+  export DOTFILES_PATH_SET=1
+fi
 
-# Google Cloud SDK
-[[ -f /opt/homebrew/share/google-cloud-sdk/path.zsh.inc ]] && source /opt/homebrew/share/google-cloud-sdk/path.zsh.inc
-
-# Secrets and machine-specific settings live outside this public repo:
-# ~/.secrets.zsh (chmod 600, generated from 1Password) and ~/.zshrc.local.
+# Secrets and machine-specific variables live outside this public repo:
+# ~/.secrets.zsh (chmod 600, generated from 1Password) and ~/.zshenv.local.
+# Both must only assign variables: every zsh, every script, reads them.
 [[ -r ~/.secrets.zsh ]] && source ~/.secrets.zsh
-[[ -r ~/.zshrc.local ]] && source ~/.zshrc.local
+[[ -r ~/.zshenv.local ]] && source ~/.zshenv.local
 
-# Agents read command output as text: no pagers or editors that wait for a
-# person, no color codes.
-if [[ -n "$AGENT_SHELL" ]]; then
+# Agents read command output as text: no pagers, no color codes, and an
+# editor that fails at once instead of waiting for a person (use -m or
+# --no-edit instead).
+if [[ ${AGENT_SHELL:-} == 1 ]]; then
   export PAGER=cat GIT_PAGER=cat GH_PAGER=cat
-  export GIT_EDITOR=true
+  export GIT_EDITOR=false
   export NO_COLOR=1
 fi

@@ -43,11 +43,11 @@ git switch master && git merge --ff-only <分支> && git push origin master
 
 | 文件 | 作用 |
 |---|---|
-| `dot_zshenv` | 环境变量和 PATH。所有 zsh 都会读，包括 agent 用的 `zsh -c`、`zsh -lc`；agent 模式下关掉翻页、编辑器和颜色 |
-| `dot_zprofile` | 登录 shell 里重新加载 `.zshenv`，恢复被 `/etc/zprofile` 打乱的 PATH 顺序 |
+| `dot_zshenv` | 环境变量和 PATH。所有 zsh 都会读，包括 agent 用的 `zsh -c`、`zsh -lc`；agent 模式下关掉翻页和颜色，编辑器改成直接失败（`AGENT_SHELL=0` 可关闭 agent 模式） |
+| `dot_zprofile` | 登录 shell 里重新设置 PATH，恢复被 `/etc/zprofile` 打乱的顺序 |
 | `dot_zshrc` | 只给人用的交互设置：提示符、补全、别名 |
 | `dot_gitconfig`、`dot_digrc`、`dot_mise.toml` | 写到 `~/` 下的其他配置文件 |
-| `.chezmoiremove` | 要从 `~/` 删掉的旧文件（Prezto 留下的 `.zlogin`） |
+| `run_onchange_after_15-remove-prezto.sh` | 删掉 Prezto 留下的 `~/.zlogin` 链接（只在它指向 `~/.zprezto` 时才删） |
 | `dot_gitconfig-sign-commits`、`dot_git_allowed_signers` | 本仓库提交必须签名；签名验证用的公钥 |
 | `Brewfile` | 软件清单 |
 | `.install-prereqs.sh` | 每次运行 chezmoi 前执行，确保 Homebrew 和 1Password 已安装 |
@@ -64,5 +64,6 @@ git switch master && git merge --ff-only <分支> && git push origin master
 这个仓库是公开的。密钥和只属于这台机器的设置放在：
 
 - `~/.secrets.zsh`（权限 600）：token 等密钥。由 `secrets.zsh.tpl` 从 1Password 生成，仓库里只有引用，没有值。
-- `~/.zshrc.local`：不是密钥、但也不适合公开的设置。
+- `~/.zshenv.local`：不是密钥、但也不适合公开的环境变量（所有 zsh 都会读，只能写变量赋值）。
+- `~/.zshrc.local`：只给交互终端用的本机设置。
 - `~/.ssh/config`：主机清单。SSH 密钥在 1Password（库 `gavin`）里，经由 1Password 的 SSH agent 使用。
