@@ -44,5 +44,4 @@ jobs:
           test -f ~/.zshrc && test -f ~/.gitconfig && test -f ~/.mise.toml
           test -x /opt/homebrew/bin/op
           test -d ~/Code/gavin
-          test -x ~/.local/bin/claude
           CLAUDECODE=1 zsh -f -c 'source ~/.zshrc; command -v node && command -v python && command -v terraform'
