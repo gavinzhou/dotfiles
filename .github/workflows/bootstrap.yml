@@ -24,6 +24,8 @@ jobs:
           for f in run_*.tmpl; do chezmoi --source "$PWD" execute-template < "$f" | bash -n; done
           # shellcheck disable=SC2016
           sed -n '/^cat > "$bin.new" <<.EOF./,/^EOF$/p' run_onchange_after_50-dotfiles-sync.sh | sed '1d;$d' | bash -n
+          zsh -n dot_zshenv
+          zsh -n dot_zprofile
           zsh -n dot_zshrc
 
       - name: Check Brewfile parses
@@ -44,4 +46,7 @@ jobs:
           test -f ~/.zshrc && test -f ~/.gitconfig && test -f ~/.mise.toml
           test -x /opt/homebrew/bin/op
           test -d ~/Code/gavin
-          CLAUDECODE=1 zsh -f -c 'source ~/.zshrc; command -v node && command -v python && command -v terraform'
+          test -f ~/.zshenv && test -f ~/.zprofile
+          # Agents run `zsh -c` / `zsh -lc`: both must see mise tools and agent settings
+          CLAUDECODE=1 zsh -c 'command -v node && command -v python && command -v terraform && [[ $PAGER == cat ]]'
+          CODEX_SANDBOX=seatbelt zsh -lc 'command -v node && [[ :$PATH: == *:$HOME/.local/bin:* ]] && [[ $GIT_EDITOR == true ]]'

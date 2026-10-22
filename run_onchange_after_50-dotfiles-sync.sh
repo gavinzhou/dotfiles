@@ -85,6 +85,8 @@ elif ! chezmoi apply --no-tty; then
 fi
 
 brewfile="$src/Brewfile"
+# Shells set HOMEBREW_NO_AUTO_UPDATE, so refresh Homebrew's package list here.
+brew update --quiet >/dev/null 2>&1 || note "brew update 失败"
 extra=$(brew bundle cleanup --file="$brewfile" 2>/dev/null | grep -vE '^(Would|Run) ' | grep -c .)
 if (( extra > 0 )); then
   note "有 ${extra} 项软件或 tap 不在 Brewfile 里。运行 brew bundle cleanup --file=${brewfile} 查看"

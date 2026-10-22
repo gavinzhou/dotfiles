@@ -43,7 +43,11 @@ git switch master && git merge --ff-only <分支> && git push origin master
 
 | 文件 | 作用 |
 |---|---|
-| `dot_zshrc`、`dot_gitconfig`、`dot_digrc`、`dot_mise.toml` | 写到 `~/` 下的配置文件 |
+| `dot_zshenv` | 环境变量和 PATH。所有 zsh 都会读，包括 agent 用的 `zsh -c`、`zsh -lc`；agent 模式下关掉翻页、编辑器和颜色 |
+| `dot_zprofile` | 登录 shell 里重新加载 `.zshenv`，恢复被 `/etc/zprofile` 打乱的 PATH 顺序 |
+| `dot_zshrc` | 只给人用的交互设置：提示符、补全、别名 |
+| `dot_gitconfig`、`dot_digrc`、`dot_mise.toml` | 写到 `~/` 下的其他配置文件 |
+| `.chezmoiremove` | 要从 `~/` 删掉的旧文件（Prezto 留下的 `.zlogin`） |
 | `dot_gitconfig-sign-commits`、`dot_git_allowed_signers` | 本仓库提交必须签名；签名验证用的公钥 |
 | `Brewfile` | 软件清单 |
 | `.install-prereqs.sh` | 每次运行 chezmoi 前执行，确保 Homebrew 和 1Password 已安装 |

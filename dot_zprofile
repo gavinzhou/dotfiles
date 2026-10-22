@@ -1,0 +1,8 @@
+#
+# Managed by chezmoi (github.com/gavinzhou/dotfiles). Edit there, not here.
+#
+# Login shells run /etc/zprofile (path_helper) after ~/.zshenv, which moves
+# system directories to the front of PATH. Load ~/.zshenv again to restore
+# the intended order.
+#
+[[ -r ${ZDOTDIR:-$HOME}/.zshenv ]] && source ${ZDOTDIR:-$HOME}/.zshenv
