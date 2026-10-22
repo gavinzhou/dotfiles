@@ -12,7 +12,7 @@ done
 
 # Claude Code CLI (Codex comes from the Brewfile)
 if [[ ! -x $HOME/.local/bin/claude ]]; then
-  curl -fsSL https://claude.ai/install.sh | bash
+  curl -fsSL --retry 5 --retry-delay 10 https://claude.ai/install.sh | bash
 fi
 
 # Shared agent memory (private repo)
