@@ -32,13 +32,14 @@ export HOMEBREW_NO_AUTO_UPDATE=1
 
 # PATH: our directories in a fixed order, so agents get the same
 # node/python/terraform (mise shims) as interactive shells. (N-/) keeps only
-# directories that exist. Directories the caller put on PATH that are not in
-# this list (a virtualenv, a project's node_modules/.bin, mise's per-project
-# installs) stay in front; macOS internals and missing directories go last. Safe to run repeatedly: ~/.zprofile runs it again
-# because /etc/zprofile reorders PATH.
+# directories that exist. Other directories keep their place relative to
+# ours: those the caller put in front (a virtualenv, a project's
+# node_modules/.bin, mise's per-project installs) stay in front, the rest
+# follow ours, and macOS internals and missing directories go last. Running
+# it again changes nothing.
 _dotfiles_path() {
-  local -a managed foreign system
-  local d
+  local -a managed front back system
+  local d seen=0
   managed=(
     $HOME/.local/bin(N-/)
     $HOME/.local/share/mise/shims(N-/)
@@ -66,19 +67,24 @@ _dotfiles_path() {
     /Applications/Keybase.app/Contents/SharedSupport/bin(N-/)
   )
   for d in $path; do
-    (( ${managed[(Ie)$d]} )) && continue
-    # macOS internals and missing directories (path_helper adds both) go last
-    if [[ ! -d $d || $d == /System/* || $d == /var/run/com.apple.* || $d == /Library/Apple/* ]]; then
+    if (( ${managed[(Ie)$d]} )); then
+      seen=1
+    elif [[ ! -d $d || $d == /System/* || $d == /var/run/com.apple.* || $d == /Library/Apple/* ]]; then
       system+=("$d")
+    elif (( seen )); then
+      back+=("$d")
     else
-      foreign+=("$d")
+      front+=("$d")
     fi
   done
   typeset -gU path
-  path=($foreign $managed $system)
+  path=($front $managed $back $system)
   export PATH
 }
 _dotfiles_path
+# Login shells: /etc/zprofile (path_helper) runs next and moves system
+# directories to the front. ~/.zprofile puts this order back.
+_dotfiles_saved_path=$PATH
 
 # Secrets and machine-specific variables live outside this public repo:
 # ~/.secrets.zsh (chmod 600, generated from 1Password) and ~/.zshenv.local.
@@ -97,5 +103,11 @@ if [[ ${AGENT_SHELL:-} == 1 ]]; then
   export NO_COLOR=1
   export DOTFILES_AGENT_VARS=1
 elif [[ -n ${DOTFILES_AGENT_VARS:-} ]]; then
-  unset PAGER GIT_PAGER GH_PAGER GIT_EDITOR NO_COLOR DOTFILES_AGENT_VARS
+  # Only drop values agent mode set; keep anything passed in explicitly
+  [[ ${PAGER:-} == cat ]] && unset PAGER
+  [[ ${GIT_PAGER:-} == cat ]] && unset GIT_PAGER
+  [[ ${GH_PAGER:-} == cat ]] && unset GH_PAGER
+  [[ ${GIT_EDITOR:-} == false ]] && unset GIT_EDITOR
+  [[ ${NO_COLOR:-} == 1 ]] && unset NO_COLOR
+  unset DOTFILES_AGENT_VARS
 fi

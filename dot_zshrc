@@ -71,7 +71,11 @@ _prompt_kube_refresh() {
   local f key='' m
   for f in ${(s.:.)${KUBECONFIG:-$HOME/.kube/config}}; do
     [[ -r $f ]] || continue
-    zstat -A m +mtime -- "$f" 2>/dev/null && key+="$f:$m;"
+    zstat -A m +mtime -- "$f" 2>/dev/null || continue
+    key+="$f:$m;"
+    # mtime has 1s resolution: a file changed within the last 2s may change
+    # again in the same second, so do not trust the cache yet
+    (( EPOCHSECONDS - m < 2 )) && key+="recent:$EPOCHREALTIME;"
   done
   if [[ $key != $_prompt_kube_key ]]; then
     _prompt_kube_key=$key

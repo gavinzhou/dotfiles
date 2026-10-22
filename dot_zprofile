@@ -2,7 +2,11 @@
 # Managed by chezmoi (github.com/gavinzhou/dotfiles). Edit there, not here.
 #
 # Login shells run /etc/zprofile (path_helper) after ~/.zshenv, which moves
-# system directories to the front of PATH. Restore the intended order with the
-# function ~/.zshenv defined (it keeps directories the caller added in front).
+# system directories to the front of PATH. Put back the order ~/.zshenv set;
+# anything path_helper added goes after it, then gets sorted the same way.
 #
-(( $+functions[_dotfiles_path] )) && _dotfiles_path
+if [[ -n ${_dotfiles_saved_path:-} ]]; then
+  typeset -U path
+  path=(${(s.:.)_dotfiles_saved_path} $path)
+  (( $+functions[_dotfiles_path] )) && _dotfiles_path
+fi
