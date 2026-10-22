@@ -3,7 +3,6 @@
 # The daily dotfiles-sync job reports anything installed but not listed here.
 
 tap "antoniorodr/memo"
-tap "argoproj/tap"
 tap "dashlane/tap"
 tap "espressif/eim"
 tap "kreuzwerker/taps"
@@ -40,7 +39,6 @@ brew "stripe/stripe-cli/stripe", trusted: true
 brew "awscli"
 brew "aws-cdk"
 brew "azure-cli"
-brew "eksctl"
 brew "cloudflared"
 brew "pulumi"
 brew "cfssl"
@@ -49,16 +47,9 @@ brew "openvpn"
 brew "iperf3"
 brew "grpcurl"
 
-# Containers and Kubernetes
+# Containers
 brew "colima"
 brew "docker"
-brew "kubectx"
-brew "kustomize"
-brew "helmfile"
-brew "argocd"
-brew "jsonnet"
-brew "tanka"
-brew "argoproj/tap/kubectl-argo-rollouts", trusted: true
 brew "kreuzwerker/taps/m1-terraform-provider-helper", trusted: true
 
 # Languages and build tools (node, python, terraform come from mise)

@@ -21,7 +21,6 @@ export GOBIN=${HOME}/go/bin
 
 export BUN_INSTALL="$HOME/.bun"
 export MISE_GLOBAL_CONFIG_FILE="$HOME/.mise.toml"
-export USE_GKE_GCLOUD_AUTH_PLUGIN=True
 export PKG_CONFIG_PATH="/opt/homebrew/opt/jpeg/lib/pkgconfig"
 export JAVA_HOME="/opt/homebrew/opt/openjdk@25/libexec/openjdk.jdk/Contents/Home"
 export ANDROID_HOME="$HOME/Library/Android/sdk"
@@ -62,7 +61,6 @@ _dotfiles_path() {
     /bin
     /usr/sbin
     /sbin
-    $HOME/.krew/bin(N-/)
     $HOME/.platformio/penv/bin(N-/)
     /Applications/Keybase.app/Contents/SharedSupport/bin(N-/)
   )

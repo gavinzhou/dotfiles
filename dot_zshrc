@@ -29,8 +29,8 @@ zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
 
 #
 # Prompt
-#   [host] ~/dir main* aws:dev k8s:ctx %          took 12s
-# host only over SSH; * unstaged, + staged; aws/k8s only when set, red when
+#   [host] ~/dir main* aws:dev %          took 12s
+# host only over SSH; * unstaged, + staged; aws only when set, red when
 # the name contains "prod"; red % after a failed command; duration on the
 # right after commands that ran 10s or more.
 #
@@ -58,39 +58,12 @@ _prompt_env() {
   fi
 }
 
-# Current kubectl context. kubectl merges every file in KUBECONFIG, so ask it,
-# but only again after one of those files changes. Runs in the prompt's own
-# shell (not a subshell) so the cache survives between prompts.
-zmodload -F zsh/stat b:zstat
-_prompt_kube_key='' _prompt_kube_ctx=''
-_prompt_kube_refresh() {
-  if (( ! $+commands[kubectl] )); then
-    _prompt_kube_ctx=''
-    return
-  fi
-  local f key='' m
-  for f in ${(s.:.)${KUBECONFIG:-$HOME/.kube/config}}; do
-    [[ -r $f ]] || continue
-    zstat -A m +mtime -- "$f" 2>/dev/null || continue
-    key+="$f:$m;"
-    # mtime has 1s resolution: a file changed within the last 2s may change
-    # again in the same second, so do not trust the cache yet
-    (( EPOCHSECONDS - m < 2 )) && key+="recent:$EPOCHREALTIME;"
-  done
-  if [[ $key != $_prompt_kube_key ]]; then
-    _prompt_kube_key=$key
-    _prompt_kube_ctx=''
-    [[ -n $key ]] && _prompt_kube_ctx=$(kubectl config current-context 2>/dev/null)
-  fi
-}
-
 _prompt_cmd_start=0
 _prompt_cmd=''
 _prompt_preexec() { _prompt_cmd_start=$EPOCHREALTIME; _prompt_cmd=$1 }
 _prompt_precmd() {
   vcs_info
-  _prompt_kube_refresh
-  _prompt_envs="$(_prompt_env aws "${AWS_PROFILE:-${AWS_VAULT:-}}")$(_prompt_env k8s "$_prompt_kube_ctx")"
+  _prompt_envs="$(_prompt_env aws "${AWS_PROFILE:-${AWS_VAULT:-}}")"
 
   RPROMPT=''
   if (( _prompt_cmd_start > 0 )); then
@@ -119,9 +92,6 @@ PROMPT='${_prompt_host}%F{blue}%~%f${vcs_info_msg_0_}${_prompt_envs} %(?.%#.%F{r
 (( $+commands[mise] )) && eval "$(mise activate zsh)"
 
 # Aliases
-alias k=kubectl
-alias kc=kubectx
-alias kn=kubens
 alias ccv="circleci config validate"
 alias vpn="sudo openvpn --config ${HOME}/.gavin.ovpn"
 alias allvpn="sudo openvpn --config ${HOME}/.gavin.ovpn --redirect-gateway def1"
@@ -136,6 +106,5 @@ ssh-add -q 2>/dev/null
 
 # Completions
 [[ -f /opt/homebrew/share/google-cloud-sdk/completion.zsh.inc ]] && source /opt/homebrew/share/google-cloud-sdk/completion.zsh.inc
-(( $+commands[kubectl] )) && source <(kubectl completion zsh)
 [ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
 [ -f "$HOME/.openclaw/completions/openclaw.zsh" ] && source "$HOME/.openclaw/completions/openclaw.zsh"
