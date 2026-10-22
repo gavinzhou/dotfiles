@@ -2,6 +2,20 @@
 [user]
 	name = gavinzhou
 	email = gavin.zhou@gmail.com
+	signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMgLNhPY4rG99LpTMHnF4TByeaJ2RolEgHQaWWeelT+g
+
+# Signing uses the SSH key in 1Password (vault gavin, Touch ID per signature).
+[gpg]
+	format = ssh
+
+[gpg "ssh"]
+	program = /Applications/1Password.app/Contents/MacOS/op-ssh-sign
+	allowedSignersFile = ~/.git_allowed_signers
+
+# Only the dotfiles repo signs every commit: dotfiles-sync applies signed
+# commits only. Signing everywhere would ask for Touch ID on every agent commit.
+[includeIf "gitdir:~/Code/gavin/dotfiles/"]
+	path = ~/.gitconfig-sign-commits
 
 [alias]
 	br = branch

@@ -1,0 +1,4 @@
+# Managed by chezmoi (github.com/gavinzhou/dotfiles).
+# Included for repos whose commits must be signed (see ~/.gitconfig).
+[commit]
+	gpgsign = true

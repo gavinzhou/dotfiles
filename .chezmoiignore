@@ -3,3 +3,4 @@ LICENSE
 Brewfile
 *.html
 *.svg
+secrets.zsh.tpl

@@ -3,8 +3,12 @@
 # The daily dotfiles-sync job reports anything installed but not listed here.
 
 tap "antoniorodr/memo"
+tap "argoproj/tap"
 tap "dashlane/tap"
 tap "espressif/eim"
+tap "kreuzwerker/taps"
+tap "mobile-dev-inc/tap"
+tap "stripe/stripe-cli"
 
 # Dotfiles tooling
 brew "chezmoi"
@@ -24,12 +28,13 @@ brew "tree"
 brew "wget"
 brew "yq"
 brew "mole"
-brew "antoniorodr/memo/memo"
+brew "antoniorodr/memo/memo", trusted: true
 
 # Signing and secrets
 brew "gnupg"
 brew "pinentry-mac"
-brew "dashlane/tap/dashlane-cli"
+brew "dashlane/tap/dashlane-cli", trusted: true
+brew "stripe/stripe-cli/stripe", trusted: true
 
 # Cloud and infrastructure
 brew "awscli"
@@ -53,6 +58,8 @@ brew "helmfile"
 brew "argocd"
 brew "jsonnet"
 brew "tanka"
+brew "argoproj/tap/kubectl-argo-rollouts", trusted: true
+brew "kreuzwerker/taps/m1-terraform-provider-helper", trusted: true
 
 # Languages and build tools (node, python, terraform come from mise)
 brew "go"
@@ -69,6 +76,7 @@ brew "cppcheck"
 brew "protobuf-c"
 brew "xcodegen"
 brew "ios-webkit-debug-proxy"
+brew "mobile-dev-inc/tap/maestro", trusted: true
 brew "hugo"
 
 # Databases
@@ -97,11 +105,6 @@ brew "pi-coding-agent"
 
 # Python bindings some tools need
 brew "cffi"
-
-# Still installed, pending review (see PR): remove the line and uninstall if unused
-brew "python@3.10"
-brew "hub"
-brew "grep"
 
 # Apps
 cask "1password"

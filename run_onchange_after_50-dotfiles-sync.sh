@@ -10,8 +10,9 @@ mkdir -p "$(dirname "$bin")" "$(dirname "$plist")" "$HOME/Library/Logs"
 # old file, so updating itself mid-run cannot corrupt it.
 cat > "$bin.new" <<'EOF'
 #!/bin/bash
-# Daily: pull dotfiles, apply them if this Mac has no local edits, and send a
-# notification when the Mac and the repo disagree. Log: ~/Library/Logs/dotfiles-sync.log
+# Daily: fetch dotfiles, apply new commits if all are signed and this Mac has
+# no local edits, and send a notification when the Mac and the repo disagree.
+# Log: ~/Library/Logs/dotfiles-sync.log
 set -uo pipefail
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/bin:/bin:/usr/sbin:/sbin"
 export MISE_GLOBAL_CONFIG_FILE="$HOME/.mise.toml"
@@ -38,6 +39,17 @@ if [[ $branch != master ]] || [[ -n $(git -C "$src" status --porcelain 2>&1) ]];
   exit 0
 fi
 
+# New commits on origin/master that are not signed by Gavin's 1Password key
+# (~/.git_allowed_signers). Only signed commits are applied, so a stolen
+# GitHub login alone cannot run code on this Mac.
+count_unsigned() {
+  local c n=0
+  for c in $(git -C "$src" rev-list HEAD..origin/master); do
+    git -C "$src" verify-commit "$c" >/dev/null 2>&1 || n=$((n + 1))
+  done
+  echo "$n"
+}
+
 # Files edited on this Mac since the last apply: chezmoi status puts those in
 # the first column (the second column is changes still waiting in the repo).
 # Count before pulling.
@@ -49,10 +61,14 @@ fi
 
 if (( local_edits < 0 )); then
   note "chezmoi status 运行失败，今天没有自动更新"
-elif ! git -C "$src" pull --ff-only --quiet; then
-  note "拉取 dotfiles 仓库失败"
 elif (( local_edits > 0 )); then
   note "本机有 ${local_edits} 个配置文件被改过，没有自动更新。运行 chezmoi diff 查看"
+elif ! git -C "$src" fetch --quiet origin master; then
+  note "拉取 dotfiles 仓库失败"
+elif (( (unsigned = $(count_unsigned)) > 0 )); then
+  note "仓库有 ${unsigned} 个新提交没有你的签名，没有自动更新。确认后在仓库里运行 git merge --ff-only origin/master，再运行 chezmoi apply"
+elif ! git -C "$src" merge --ff-only --quiet origin/master; then
+  note "合并仓库更新失败，没有自动更新"
 elif ! chezmoi apply --no-tty; then
   note "自动更新失败，运行 chezmoi apply 查看原因"
 fi
