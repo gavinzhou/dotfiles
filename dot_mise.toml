@@ -1,0 +1,6 @@
+# Global tool versions (MISE_GLOBAL_CONFIG_FILE points here, see ~/.zshrc).
+# Installed by `chezmoi apply` (run_onchange_after_30-mise.sh).
+[tools]
+node = "lts"
+python = "3.14"
+terraform = "1"

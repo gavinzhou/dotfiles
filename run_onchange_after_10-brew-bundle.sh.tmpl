@@ -1,0 +1,7 @@
+#!/bin/bash
+# Runs again whenever the Brewfile changes.
+# Brewfile sha256: {{ include "Brewfile" | sha256sum }}
+set -euo pipefail
+
+eval "$(/opt/homebrew/bin/brew shellenv)"
+brew bundle --no-upgrade --file={{ joinPath .chezmoi.sourceDir "Brewfile" | quote }}
