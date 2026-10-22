@@ -48,7 +48,7 @@ count_unsigned() {
   local commits c n=0
   commits=$(git -C "$src" rev-list HEAD..origin/master) || return 1
   for c in $commits; do
-    if git -C "$src" cat-file commit "$c" | grep -q '^gpgsig -----BEGIN SSH SIGNATURE-----$' &&
+    if git -C "$src" cat-file commit "$c" | grep '^gpgsig -----BEGIN SSH SIGNATURE-----$' >/dev/null &&
       git -C "$src" -c gpg.ssh.allowedSignersFile="$HOME/.git_allowed_signers" \
         -c gpg.program=/usr/bin/false -c gpg.x509.program=/usr/bin/false \
         verify-commit "$c" >/dev/null 2>&1; then
