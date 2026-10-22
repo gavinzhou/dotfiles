@@ -21,21 +21,33 @@ export DOTFILES_SYNC_RUNNING=1
 notes=()
 note() { notes+=("$1"); echo "$(date '+%F %T') $1"; }
 
+notify() {
+  local msg
+  msg=$(printf '%s；' "${notes[@]}")
+  osascript -e "display notification \"${msg%；}\" with title \"dotfiles\"" >/dev/null 2>&1 || true
+}
+
+# The source is the working clone in ~/Code. Check it before running chezmoi
+# or brew at all: both execute code from the repo (the prereqs hook, Brewfile),
+# and only reviewed master may run, never a feature branch or uncommitted work.
+src="$HOME/Code/gavin/dotfiles"
+branch=$(git -C "$src" symbolic-ref --short HEAD 2>/dev/null)
+if [[ $branch != master ]] || [[ -n $(git -C "$src" status --porcelain 2>&1) ]]; then
+  note "dotfiles 仓库不在 master 或有未提交的文件，今天没有自动更新"
+  notify
+  exit 0
+fi
+
 # Files edited on this Mac since the last apply: chezmoi status puts those in
 # the first column (the second column is changes still waiting in the repo).
+# Count before pulling.
 if status=$(chezmoi status --exclude=scripts 2>/dev/null); then
   local_edits=$(grep -c '^[^ ]' <<<"$status")
 else
   local_edits=-1
 fi
 
-# The source is the working clone in ~/Code. Only apply reviewed master, never
-# a feature branch or uncommitted work in progress.
-src=$(chezmoi source-path)
-branch=$(git -C "$src" symbolic-ref --short HEAD 2>/dev/null)
-if [[ $branch != master ]] || [[ -n $(git -C "$src" status --porcelain) ]]; then
-  note "dotfiles 仓库不在 master 或有未提交的文件，今天没有自动更新"
-elif (( local_edits < 0 )); then
+if (( local_edits < 0 )); then
   note "chezmoi status 运行失败，今天没有自动更新"
 elif ! git -C "$src" pull --ff-only --quiet; then
   note "拉取 dotfiles 仓库失败"
@@ -55,8 +67,7 @@ if ! brew bundle check --no-upgrade --file="$brewfile" >/dev/null 2>&1; then
 fi
 
 if (( ${#notes[@]} > 0 )); then
-  msg=$(printf '%s；' "${notes[@]}")
-  osascript -e "display notification \"${msg%；}\" with title \"dotfiles\"" >/dev/null 2>&1 || true
+  notify
 else
   echo "$(date '+%F %T') ok"
 fi
