@@ -82,9 +82,37 @@ _dotfiles_path() {
   export PATH
 }
 _dotfiles_path
-# Login shells: /etc/zprofile (path_helper) runs next and moves system
-# directories to the front. ~/.zprofile puts this order back.
-_dotfiles_saved_path=$PATH
+
+# Agents read command output as text: no pagers, no color codes, and an
+# editor that fails at once instead of waiting for a person (use -m or
+# --no-edit instead). The values these replace are saved in DOTFILES_ORIG_*
+# so a shell started with AGENT_SHELL=0 inside an agent gets them back.
+# Runs before the local files below, so values set there always win.
+_dotfiles_agent_vars=(PAGER GIT_PAGER GH_PAGER GIT_EDITOR NO_COLOR)
+if [[ ${AGENT_SHELL:-} == 1 ]]; then
+  if [[ -z ${DOTFILES_AGENT_VARS:-} ]]; then
+    for _v in $_dotfiles_agent_vars; do
+      (( ${+parameters[$_v]} )) && export "DOTFILES_ORIG_$_v=${(P)_v}"
+    done
+  fi
+  export PAGER=cat GIT_PAGER=cat GH_PAGER=cat
+  export GIT_EDITOR=false
+  export NO_COLOR=1
+  export DOTFILES_AGENT_VARS=1
+elif [[ -n ${DOTFILES_AGENT_VARS:-} ]]; then
+  # Leaving agent mode: restore saved values, otherwise drop the agent ones
+  typeset -A _agent_val=(PAGER cat GIT_PAGER cat GH_PAGER cat GIT_EDITOR false NO_COLOR 1)
+  for _v in $_dotfiles_agent_vars; do
+    if (( ${+parameters[DOTFILES_ORIG_$_v]} )); then
+      [[ ${(P)_v:-} == $_agent_val[$_v] ]] && export "$_v=${(P)${:-DOTFILES_ORIG_$_v}}"
+      unset "DOTFILES_ORIG_$_v"
+    elif [[ ${(P)_v:-} == $_agent_val[$_v] ]]; then
+      unset "$_v"
+    fi
+  done
+  unset DOTFILES_AGENT_VARS _agent_val
+fi
+unset _v _dotfiles_agent_vars
 
 # Secrets and machine-specific variables live outside this public repo:
 # ~/.secrets.zsh (chmod 600, generated from 1Password) and ~/.zshenv.local.
@@ -92,22 +120,6 @@ _dotfiles_saved_path=$PATH
 [[ -r ~/.secrets.zsh ]] && source ~/.secrets.zsh
 [[ -r ~/.zshenv.local ]] && source ~/.zshenv.local
 
-# Agents read command output as text: no pagers, no color codes, and an
-# editor that fails at once instead of waiting for a person (use -m or
-# --no-edit instead).
-# DOTFILES_AGENT_VARS marks that these came from here, so a shell started
-# with AGENT_SHELL=0 inside an agent can drop them again.
-if [[ ${AGENT_SHELL:-} == 1 ]]; then
-  export PAGER=cat GIT_PAGER=cat GH_PAGER=cat
-  export GIT_EDITOR=false
-  export NO_COLOR=1
-  export DOTFILES_AGENT_VARS=1
-elif [[ -n ${DOTFILES_AGENT_VARS:-} ]]; then
-  # Only drop values agent mode set; keep anything passed in explicitly
-  [[ ${PAGER:-} == cat ]] && unset PAGER
-  [[ ${GIT_PAGER:-} == cat ]] && unset GIT_PAGER
-  [[ ${GH_PAGER:-} == cat ]] && unset GH_PAGER
-  [[ ${GIT_EDITOR:-} == false ]] && unset GIT_EDITOR
-  [[ ${NO_COLOR:-} == 1 ]] && unset NO_COLOR
-  unset DOTFILES_AGENT_VARS
-fi
+# Login shells: /etc/zprofile (path_helper) runs after this file and moves
+# system directories to the front. ~/.zprofile puts this order back.
+_dotfiles_saved_path=$PATH
