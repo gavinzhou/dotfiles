@@ -30,14 +30,16 @@ export ANDROID_SDK_ROOT="$ANDROID_HOME"
 # The daily dotfiles-sync job runs `brew update`, so commands never stall on it.
 export HOMEBREW_NO_AUTO_UPDATE=1
 
-# PATH: earlier entries win, duplicates are dropped, and (N-/) keeps only
-# directories that exist, so stale tool paths do nothing. mise shims come
-# early so agents get the same node/python/terraform as interactive shells.
-# Directories already on PATH that are not listed here (a virtualenv, a
-# project's node_modules/.bin) are kept after these.
+# PATH: our directories in a fixed order, so agents get the same
+# node/python/terraform (mise shims) as interactive shells. (N-/) keeps only
+# directories that exist. Directories the caller put on PATH that are not in
+# this list (a virtualenv, a project's node_modules/.bin, mise's per-project
+# installs) stay in front; macOS internals and missing directories go last. Safe to run repeatedly: ~/.zprofile runs it again
+# because /etc/zprofile reorders PATH.
 _dotfiles_path() {
-  typeset -gU path
-  path=(
+  local -a managed foreign system
+  local d
+  managed=(
     $HOME/.local/bin(N-/)
     $HOME/.local/share/mise/shims(N-/)
     $HOME/bin(N-/)
@@ -62,16 +64,21 @@ _dotfiles_path() {
     $HOME/.krew/bin(N-/)
     $HOME/.platformio/penv/bin(N-/)
     /Applications/Keybase.app/Contents/SharedSupport/bin(N-/)
-    $path
   )
+  for d in $path; do
+    (( ${managed[(Ie)$d]} )) && continue
+    # macOS internals and missing directories (path_helper adds both) go last
+    if [[ ! -d $d || $d == /System/* || $d == /var/run/com.apple.* || $d == /Library/Apple/* ]]; then
+      system+=("$d")
+    else
+      foreign+=("$d")
+    fi
+  done
+  typeset -gU path
+  path=($foreign $managed $system)
   export PATH
 }
-# Set PATH once in the outermost shell; nested shells keep what they inherit.
-# ~/.zprofile calls _dotfiles_path again because /etc/zprofile reorders PATH.
-if [[ -z ${DOTFILES_PATH_SET:-} ]]; then
-  _dotfiles_path
-  export DOTFILES_PATH_SET=1
-fi
+_dotfiles_path
 
 # Secrets and machine-specific variables live outside this public repo:
 # ~/.secrets.zsh (chmod 600, generated from 1Password) and ~/.zshenv.local.
@@ -82,8 +89,13 @@ fi
 # Agents read command output as text: no pagers, no color codes, and an
 # editor that fails at once instead of waiting for a person (use -m or
 # --no-edit instead).
+# DOTFILES_AGENT_VARS marks that these came from here, so a shell started
+# with AGENT_SHELL=0 inside an agent can drop them again.
 if [[ ${AGENT_SHELL:-} == 1 ]]; then
   export PAGER=cat GIT_PAGER=cat GH_PAGER=cat
   export GIT_EDITOR=false
   export NO_COLOR=1
+  export DOTFILES_AGENT_VARS=1
+elif [[ -n ${DOTFILES_AGENT_VARS:-} ]]; then
+  unset PAGER GIT_PAGER GH_PAGER GIT_EDITOR NO_COLOR DOTFILES_AGENT_VARS
 fi

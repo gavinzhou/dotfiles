@@ -3,6 +3,6 @@
 #
 # Login shells run /etc/zprofile (path_helper) after ~/.zshenv, which moves
 # system directories to the front of PATH. Restore the intended order with the
-# function ~/.zshenv defined.
+# function ~/.zshenv defined (it keeps directories the caller added in front).
 #
 (( $+functions[_dotfiles_path] )) && _dotfiles_path
