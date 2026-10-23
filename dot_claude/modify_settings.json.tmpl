@@ -16,16 +16,20 @@ base={{ joinPath .chezmoi.sourceDir "claude-settings.json" | quote }}
 cur_json=$cur
 [[ $cur == *[![:space:]]* ]] || cur_json='{}'
 
-merged=$(jq -s '
-  .[0] as $c | .[1] as $b
+# Each side must be exactly one JSON object; anything else stops the apply.
+merged=$(jq -n --slurpfile cs <(printf '%s' "$cur_json") --slurpfile bs "$base" '
+  if ($cs | length) != 1 or ($bs | length) != 1
+    or ($cs[0] | type) != "object" or ($bs[0] | type) != "object"
+  then error("settings.json and claude-settings.json must each be one JSON object") end
+  | $cs[0] as $c | $bs[0] as $b
   | ($c * $b)
   | .permissions.allow = (
       reduce (($c.permissions.allow // []) + ($b.permissions.allow // []))[] as $x
         ([]; if any(.[]; . == $x) then . else . + [$x] end))
-' <(printf '%s' "$cur_json") "$base")
+')
 
-if [[ $cur == *[![:space:]]* ]] && [[ $(jq -S . <<<"$merged") == "$(printf '%s' "$cur" | jq -S .)" ]]; then
+if [[ $cur == *[![:space:]]* ]] && [[ $(printf '%s' "$merged" | jq -S .) == "$(printf '%s' "$cur" | jq -S .)" ]]; then
   printf '%s' "$cur"
 else
-  jq . <<<"$merged"
+  printf '%s' "$merged" | jq .
 fi

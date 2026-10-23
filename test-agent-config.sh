@@ -17,17 +17,16 @@ work=$(mktemp -d)
   mkdir "$work/bin"
   cat > "$work/bin/op" <<'EOF'
 #!/bin/bash
+[[ -z ${OP_LOG:-} ]] || echo "$*" >> "$OP_LOG"
 [[ ${OP_OK:-0} == 1 ]] || exit 1
 echo "test-${2##*/}"
 EOF
   chmod +x "$work/bin/op"
   export PATH="$work/bin:$PATH"
 
-  run() { # run <script> <input file>; keeps trailing newlines
-    local out
-    out=$(bash -c "$1" < "$2"; printf x)
-    printf '%s' "${out%x}"
-  }
+  # run <script> <input file>: callers redirect stdout to a file, so trailing
+  # newlines survive; a failing script fails the run (set -e) unless checked.
+  run() { /bin/bash -c "$1" < "$2"; }
 
   # Claude: a new Mac gets the baseline.
   : > "$work/empty"
@@ -73,6 +72,32 @@ EOF
     '[[ $(jq -c "[.mcp_servers | keys[]?]" "$work/x3.json") == "[]" ]]'
   check "codex: says what it left out" '[[ $(grep -c "left out" "$work/x3.err") == 3 ]]'
   check "codex: no secret text in output" '! grep -q "test-" "$work/x3"'
+
+  # Codex: an existing file missing a server's secret (removed on purpose) never
+  # asks 1Password, so a daily sync can't prompt for Touch ID.
+  jq 'del(.mcp_servers.penpot)' "$work/x1.json" | yq -p json -o toml . > "$work/x4"
+  OP_OK=1 OP_LOG="$work/op.log" run "$codex" "$work/x4" > "$work/x4.out"
+  check "codex: existing file never calls op" '[[ ! -e $work/op.log ]]'
+  check "codex: removed server stays removed" 'cmp -s "$work/x4" "$work/x4.out"'
+
+  # Codex: a secret that is only its prefix is not a secret; the server goes,
+  # still without asking 1Password.
+  jq '.mcp_servers["slack-official"].http_headers.Authorization = "Bearer "' "$work/x1.json" |
+    yq -p json -o toml . > "$work/x5"
+  OP_OK=1 OP_LOG="$work/op.log" run "$codex" "$work/x5" | yq -p toml -o json . > "$work/x5.json"
+  check "codex: empty token drops the server" '[[ $(jq ".mcp_servers | has(\"slack-official\")" "$work/x5.json") == false ]]'
+  check "codex: empty token never calls op" '[[ ! -e $work/op.log ]]'
+
+  # Codex: a config that is only comments is treated as empty, not an error.
+  printf '# nothing yet\n' > "$work/x6"
+  check "codex: comment-only file works" 'run "$codex" "$work/x6" 2>/dev/null | yq -p toml -e .model >/dev/null'
+
+  # Claude: a settings file holding two JSON documents stops the apply.
+  printf '{}\n{}\n' > "$work/c4"
+  check "claude: two JSON documents fail" '! run "$claude" "$work/c4" >/dev/null 2>&1'
+
+  # Failures reach the test: a script that exits non-zero is not a pass.
+  check "run passes exit codes through" '! run "exit 23" "$work/empty"'
 
   exit "$fail"
 ) || fail=1

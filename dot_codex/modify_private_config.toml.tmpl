@@ -4,10 +4,11 @@
 # When the merge changes nothing the file passes through byte for byte, so
 # chezmoi (and dotfiles-sync) see no local edit.
 #
-# MCP secrets are never in the repo. A secret already in the file is kept; a
-# missing one is read from 1Password (vault gavin, item "dotfiles/.secrets.zsh"),
-# which only happens on a new Mac. If 1Password can't give it, that MCP server
-# is left out rather than written half configured.
+# MCP secrets are never in the repo. A secret already in the file is kept.
+# Only when there is no config.toml yet (a new Mac) are missing ones read from
+# 1Password (vault gavin, item "dotfiles/.secrets.zsh"); otherwise 1Password is
+# never asked, so daily syncs never prompt for Touch ID. A server without its
+# secret is left out rather than written half configured.
 set -euo pipefail
 
 # A new Mac may not have Homebrew on PATH yet (appended, so tests can stub op).
@@ -18,31 +19,35 @@ cur=${cur%x}
 base={{ joinPath .chezmoi.sourceDir "codex-config.toml" | quote }}
 item=op://gavin/beupxaquvtgrgg26xkwavx5fse
 
+# Everything below passes the config (with its secrets) through pipes, never
+# here-strings: /bin/bash 3.2 writes those to a temp file.
 cur_json='{}'
 if [[ $cur == *[![:space:]]* ]]; then
   cur_json=$(printf '%s' "$cur" | yq -p toml -o json .)
 fi
-merged=$(jq -s '.[0] * .[1]' <(printf '%s' "$cur_json") <(yq -p toml -o json . "$base"))
+merged=$(jq -s '(.[0] // {}) * .[1]' <(printf '%s' "$cur_json") <(yq -p toml -o json . "$base"))
 
 # fill <server> <jq path of the secret> <op field> <prefix>
 fill() {
   local server=$1 path=$2 field=$3 prefix=$4 value
-  if jq -e "$path != null" <<<"$merged" >/dev/null; then
+  # A secret counts only if it has something after its prefix.
+  if printf '%s' "$merged" | PREFIX="$prefix" jq -e "($path // \"\") as \$v | (\$v | startswith(env.PREFIX)) and (\$v | length) > (env.PREFIX | length)" >/dev/null; then
     return
   fi
-  if value=$(op read "$item/$field" 2>/dev/null) && [[ -n $value ]]; then
-    merged=$(SECRET="$prefix$value" jq "$path = env.SECRET" <<<"$merged")
+  if [[ $cur != *[![:space:]]* ]] && value=$(op read "$item/$field" 2>/dev/null) && [[ -n $value ]]; then
+    merged=$(printf '%s' "$merged" | SECRET="$prefix$value" jq "$path = env.SECRET")
   else
-    echo "dotfiles: 1Password has no $field; left out Codex MCP server $server" >&2
-    merged=$(jq --arg s "$server" 'del(.mcp_servers[$s])' <<<"$merged")
+    [[ $cur == *[![:space:]]* ]] || echo "dotfiles: 1Password has no $field; left out Codex MCP server $server" >&2
+    merged=$(printf '%s' "$merged" | jq --arg s "$server" 'del(.mcp_servers[$s])')
   fi
 }
 fill slack-official '.mcp_servers["slack-official"].http_headers.Authorization' SLACK_MCP_TOKEN 'Bearer '
 fill stitch '.mcp_servers.stitch.http_headers["X-Goog-Api-Key"]' STITCH_API_KEY ''
 fill penpot '.mcp_servers.penpot.url' PENPOT_MCP_TOKEN 'https://design.penpot.app/mcp/stream?userToken='
 
-if [[ $(jq -S . <<<"$merged") == "$(jq -S . <<<"$cur_json")" ]] && [[ $cur == *[![:space:]]* ]]; then
+if [[ $cur == *[![:space:]]* ]] &&
+  [[ $(printf '%s' "$merged" | jq -S .) == "$(printf '%s' "$cur_json" | jq -S '. // {}')" ]]; then
   printf '%s' "$cur"
 else
-  yq -p json -o toml . <<<"$merged"
+  printf '%s' "$merged" | yq -p json -o toml .
 fi
