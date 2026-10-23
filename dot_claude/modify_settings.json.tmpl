@@ -1,0 +1,31 @@
+#!/bin/bash
+# Merges claude-settings.json (shared, public) into ~/.claude/settings.json.
+# Keys not in it stay local: autoMode (names internal repos) and whatever
+# Claude Code adds. permissions.allow keeps local entries and adds missing ones.
+# When the merge changes nothing the file passes through byte for byte, so
+# chezmoi (and dotfiles-sync) see no local edit.
+set -euo pipefail
+
+# A new Mac may not have Homebrew on PATH yet (appended, so tests can stub op).
+export PATH="$PATH:/opt/homebrew/bin"
+
+cur=$(cat; printf x)
+cur=${cur%x}
+base={{ joinPath .chezmoi.sourceDir "claude-settings.json" | quote }}
+
+cur_json=$cur
+[[ $cur == *[![:space:]]* ]] || cur_json='{}'
+
+merged=$(jq -s '
+  .[0] as $c | .[1] as $b
+  | ($c * $b)
+  | .permissions.allow = (
+      reduce (($c.permissions.allow // []) + ($b.permissions.allow // []))[] as $x
+        ([]; if any(.[]; . == $x) then . else . + [$x] end))
+' <(printf '%s' "$cur_json") "$base")
+
+if [[ $cur == *[![:space:]]* ]] && [[ $(jq -S . <<<"$merged") == "$(printf '%s' "$cur" | jq -S .)" ]]; then
+  printf '%s' "$cur"
+else
+  jq . <<<"$merged"
+fi

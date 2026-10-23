@@ -28,6 +28,11 @@ jobs:
           zsh -n dot_zprofile
           zsh -n dot_zshrc
 
+      - name: Test agent config merges
+        run: |
+          brew install jq yq
+          bash test-agent-config.sh
+
       - name: Check Brewfile parses
         run: brew bundle list --all --file=Brewfile > /dev/null
 
@@ -47,6 +52,9 @@ jobs:
           test -x /opt/homebrew/bin/op
           test -d ~/Code/gavin
           test -f ~/.zshenv && test -f ~/.zprofile
+          test -f ~/.claude/CLAUDE.md && test -f ~/.codex/AGENTS.md && test -f ~/.agents/.skill-lock.json
+          jq -e '.tui == "fullscreen"' ~/.claude/settings.json
+          [[ $(stat -f %Lp ~/.codex/config.toml) == 600 ]] && yq -p toml -e '.model' ~/.codex/config.toml
           # Agents run `zsh -c` / `zsh -lc`: both must see mise tools and agent settings
           CLAUDECODE=1 zsh -c 'command -v node && command -v python && command -v terraform && [[ $PAGER == cat ]]'
           CODEX_SANDBOX=seatbelt zsh -lc 'command -v node && [[ :$PATH: == *:$HOME/.local/bin:* ]] && [[ $GIT_EDITOR == false ]]'

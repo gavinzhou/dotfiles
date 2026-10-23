@@ -1,0 +1,44 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(~/Code/**)"
+    ],
+    "defaultMode": "auto"
+  },
+  "enabledPlugins": {
+    "clangd-lsp@claude-plugins-official": true,
+    "superpowers@superpowers-marketplace": true,
+    "cc-plugin-you-should-know@builtin": true,
+    "codex-fleet@gavinzhou": true,
+    "fleet-panel@gavinzhou": true,
+    "swift-lsp@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {
+    "karpathy-skills": {
+      "source": {
+        "source": "github",
+        "repo": "forrestchang/andrej-karpathy-skills"
+      }
+    },
+    "superpowers-marketplace": {
+      "source": {
+        "source": "github",
+        "repo": "obra/superpowers-marketplace"
+      }
+    },
+    "gavinzhou": {
+      "source": {
+        "source": "github",
+        "repo": "gavinzhou/claude-plugins"
+      }
+    }
+  },
+  "tui": "fullscreen",
+  "autoMemoryDirectory": "~/.agents/memory",
+  "skipDangerousModePermissionPrompt": true,
+  "todoFeatureEnabled": false,
+  "agentPushNotifEnabled": true,
+  "preferredNotifChannel": "ghostty",
+  "skipAutoPermissionPrompt": true,
+  "skipWorkflowUsageWarning": true
+}

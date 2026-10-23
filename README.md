@@ -56,8 +56,27 @@ git switch master && git merge --ff-only <分支> && git push origin master
 | `run_onchange_after_20-macos.sh` | 系统设置：Dock、Finder、轻点点按、大写锁定键改 Control |
 | `run_onchange_after_25-1password-ssh.sh` | 让 1Password SSH agent 提供 `gavin` 库里的密钥 |
 | `run_onchange_after_30-mise.sh.tmpl` | 装 node、python、terraform |
+| `dot_claude/CLAUDE.md`、`dot_codex/AGENTS.md` | Claude Code 和 Codex 的全局入口，只指向记忆仓库里的规则 |
+| `claude-settings.json` + `dot_claude/modify_settings.json.tmpl` | Claude Code 的共用设置，合并进 `~/.claude/settings.json`；没列在里面的键（`autoMode` 和 Claude 自己加的）留在本机 |
+| `codex-config.toml` + `dot_codex/modify_private_config.toml.tmpl` | Codex 的共用设置，合并进 `~/.codex/config.toml`（权限 600）；Codex 应用自己写的键留在本机。MCP 密钥只在缺失时从 1Password 读（新 Mac） |
+| `dot_agents/dot_skill-lock.json` | `npx skills` 装过的技能清单 |
+| `test-agent-config.sh` | 上面两个合并脚本的测试（CI 里跑） |
 | `run_after_40-agents.sh` | 建 `~/Code/<组>`，装 Claude Code，克隆记忆仓库 |
 | `run_onchange_after_50-dotfiles-sync.sh` | 安装每天的自动同步任务 |
+
+## 技能
+
+`npx skills` 装的技能记录在 `~/.agents/.skill-lock.json`（每条都有来源地址），换电脑时照着 `npx skills add <来源>` 重装。下面这些不是用 `npx skills` 装的，lock 里没有：
+
+| 技能 | 来源 | 怎么装 |
+|---|---|---|
+| agents-sdk、cloudflare、cloudflare-email-service、cloudflare-one、cloudflare-one-migrations、durable-objects、nextjs-on-cloudflare、sandbox-migrate-to-next、sandbox-next、sandbox-stable、turnstile-spin、web-perf、workers-best-practices、wrangler | [cloudflare/skills](https://github.com/cloudflare/skills) | `npx skills add cloudflare/skills` |
+| sandbox-sdk | 以前的 cloudflare/skills，现在仓库里已经没有 | 不再安装，改用 sandbox-next / sandbox-stable |
+| pdftext | [warrenzhu050413/warren-claude-code-plugin-marketplace](https://github.com/warrenzhu050413/warren-claude-code-plugin-marketplace)（`claude-context-orchestrator/snippets/local/productivity/pdftext`） | 把这个目录复制到 `~/.agents/skills/pdftext` |
+| easyeda-agent | [zhoushoujianwork/easyeda-agent](https://github.com/zhoushoujianwork/easyeda-agent) | 按该仓库 README 的方式安装 |
+| colorfigures | [april-zhu.com/colorfigures](https://april-zhu.com/colorfigures) | 按该页面的安装命令解压到 `~/.claude/skills` |
+
+`~/.claude/skills/synced` 是 Claude 应用自己同步的插件技能，不用管。
 
 ## 不放进仓库的东西
 
@@ -66,4 +85,6 @@ git switch master && git merge --ff-only <分支> && git push origin master
 - `~/.secrets.zsh`（权限 600）：token 等密钥。由 `secrets.zsh.tpl` 从 1Password 生成，仓库里只有引用，没有值。
 - `~/.zshenv.local`：不是密钥、但也不适合公开的环境变量（所有 zsh 都会读，只能写变量赋值）。
 - `~/.zshrc.local`：只给交互终端用的本机设置。
+- `~/.claude/settings.json` 的 `autoMode`：写了内部仓库和生产环境的说明，只留在本机。
+- `~/.codex/config.toml` 里的 MCP 密钥：在 1Password（库 `gavin`，条目「dotfiles/.secrets.zsh」）。
 - `~/.ssh/config`：主机清单。SSH 密钥在 1Password（库 `gavin`）里，经由 1Password 的 SSH agent 使用。

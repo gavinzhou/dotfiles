@@ -15,3 +15,10 @@ if [[ ! -d /Applications/1Password.app ]] || [[ ! -x /opt/homebrew/bin/op ]]; th
   echo "dotfiles: installing 1Password and its CLI" >&2
   "$brew_bin" install --cask 1password 1password-cli
 fi
+
+# dot_claude and dot_codex merge JSON/TOML with these while files are applied,
+# before the Brewfile script runs.
+if [[ ! -x /opt/homebrew/bin/jq ]] || [[ ! -x /opt/homebrew/bin/yq ]]; then
+  echo "dotfiles: installing jq and yq" >&2
+  "$brew_bin" install jq yq
+fi

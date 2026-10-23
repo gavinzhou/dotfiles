@@ -1,0 +1,128 @@
+# Shared Codex settings. dot_codex/modify_private_config.toml.tmpl merges these into
+# ~/.codex/config.toml; keys the Codex app writes (projects, desktop, hooks...)
+# stay local. MCP secrets come from 1Password, never from this file.
+
+model = "gpt-6.1-sol"
+model_reasoning_effort = "low"
+service_tier = "fast"
+
+[features]
+js_repl = false
+
+[notice]
+hide_rate_limit_model_nudge = true
+
+[profiles.full-access]
+sandbox_mode = "danger-full-access"
+approval_policy = "never"
+
+[mcp_servers.slack-official]
+url = "https://mcp.slack.com/mcp"
+
+[mcp_servers.slack-official.tools.slack_add_reaction]
+approval_mode = "approve"
+
+[mcp_servers.stitch]
+url = "https://stitch.googleapis.com/mcp"
+
+[marketplaces.diagram-design]
+source_type = "git"
+source = "https://github.com/cathrynlavery/diagram-design.git"
+
+[marketplaces.claude-plugins-official]
+source_type = "git"
+source = "https://github.com/anthropics/claude-plugins-official.git"
+
+[marketplaces.superpowers-marketplace]
+source_type = "git"
+source = "https://github.com/obra/superpowers-marketplace.git"
+
+[plugins."documents@openai-primary-runtime"]
+enabled = true
+
+[plugins."spreadsheets@openai-primary-runtime"]
+enabled = true
+
+[plugins."presentations@openai-primary-runtime"]
+enabled = true
+
+[plugins."figma@openai-curated"]
+enabled = true
+
+[plugins."github@openai-curated"]
+enabled = true
+
+[plugins."google-drive@openai-curated"]
+enabled = true
+
+[plugins."gmail@openai-curated"]
+enabled = true
+
+[plugins."notion@openai-curated"]
+enabled = true
+
+[plugins."google-calendar@openai-curated"]
+enabled = true
+
+[plugins."superpowers@openai-curated"]
+enabled = true
+
+[plugins."slack@openai-curated"]
+enabled = true
+
+[plugins."pdf@openai-primary-runtime"]
+enabled = true
+
+[plugins."template-creator@openai-primary-runtime"]
+enabled = true
+
+[plugins."visualize@openai-bundled"]
+enabled = true
+
+[plugins."chrome@openai-bundled"]
+enabled = true
+
+[plugins."computer-use@openai-bundled"]
+enabled = true
+
+[plugins."browser@openai-bundled"]
+enabled = true
+
+[plugins."codex-app-tools@openai-bundled"]
+enabled = true
+
+[plugins."unified-computer-use@openai-bundled"]
+enabled = true
+
+[plugins."code-review@openai-bundled"]
+enabled = true
+
+[plugins."diagram-design@diagram-design"]
+enabled = true
+
+[plugins."clangd-lsp@claude-plugins-official"]
+enabled = true
+
+[plugins."superpowers@superpowers-marketplace"]
+enabled = true
+
+[plugins."cowork-plugin-management@claude-cowork"]
+enabled = true
+
+[plugins."data@claude-cowork"]
+enabled = true
+
+[plugins."design@claude-cowork"]
+enabled = true
+
+[plugins."diagram-design@claude-cowork"]
+enabled = true
+
+[plugins."engineering@claude-cowork"]
+enabled = true
+
+[plugins."finance@claude-cowork"]
+enabled = true
+
+[plugins."spglobal-plugin@claude-cowork"]
+enabled = true
