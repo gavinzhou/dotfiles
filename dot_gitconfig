@@ -36,6 +36,13 @@
 	helper =
 	helper = !/opt/homebrew/bin/gh auth git-credential
 
+# GitHub fetch/push goes over HTTPS with the gh token (macOS keychain), not the
+# 1Password SSH agent, so a locked 1Password or an unanswered approval prompt
+# no longer blocks git. Repos cloned with git@github.com: URLs need no change.
+[url "https://github.com/"]
+	insteadOf = git@github.com:
+	insteadOf = ssh://git@github.com/
+
 [credential "https://gist.github.com"]
 	helper =
 	helper = !/opt/homebrew/bin/gh auth git-credential
