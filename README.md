@@ -88,4 +88,4 @@ git switch master && git merge --ff-only <分支> && git push origin master
 - `~/.claude/settings.json` 的 `autoMode`：写了内部仓库和生产环境的说明，只留在本机。
 - `~/.codex/config.toml` 里的 MCP 密钥：在 1Password（库 `gavin`，条目「dotfiles/.secrets.zsh」）。
 - `~/.ssh/config`：主机清单。SSH 密钥在 1Password（库 `gavin`）里，经由 1Password 的 SSH agent 使用。
-- GitHub 的拉取和推送：`~/.gitconfig` 把 `git@github.com:` 地址自动改成 HTTPS，用 `gh` 的令牌（在钥匙串里），不经过 1Password。1Password 只用于连远程 Mac 和本仓库的提交签名。
+- GitHub 的拉取和推送：`~/.gitconfig` 把 `git@github.com:` 地址自动改成 HTTPS，用 `gh` 的令牌（在钥匙串里），不经过 1Password。1Password 只用于连远程 Mac 和本仓库的提交签名。令牌要有 `workflow` 权限，否则推送改了 `.github/workflows` 的提交会被拒；新 Mac 登录后跑 `gh auth refresh -h github.com -s workflow`，用 `gh auth status` 确认。
