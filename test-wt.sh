@@ -98,7 +98,10 @@ work=$(mktemp -d)
   WT_OWNER_PID=$od wt new envfile >/dev/null 2>&1
   printf '.env\nnode_modules/\n' >> "$repo/.git/info/exclude"
   echo s > "$wtdir/envfile/.env"
-  WT_OWNER_PID=$od wt new modules >/dev/null 2>&1
+  WT_OWNER_PID=$od wt new oddnames >/dev/null 2>&1
+  printf 'build\n-n\n' >> "$repo/.git/info/exclude"
+  echo s > "$wtdir/oddnames/build"; echo s > "$wtdir/oddnames/-n"
+    WT_OWNER_PID=$od wt new modules >/dev/null 2>&1
   mkdir -p "$wtdir/modules/node_modules/x"; echo s > "$wtdir/modules/node_modules/x/i.js"
   git -C "$wtdir/deadcommit" commit -q --allow-empty -m only-here
   gone "$od"; gone "$ox"
@@ -134,6 +137,7 @@ work=$(mktemp -d)
   check "sweep: Chinese task, live owner kept" '[[ -d $wtdir/alivecn ]]'
   check "sweep: untracked file hidden by config kept" '[[ -f $wtdir/hidden/untracked ]]'
   check "sweep: ignored .env kept" '[[ -f $wtdir/envfile/.env && $log == *envfile*"被忽略的文件"* ]]'
+  check "sweep: ignored file named build or -n kept" '[[ -f $wtdir/oddnames/build && -f "$wtdir/oddnames/-n" ]]'
   check "sweep: only node_modules ignored: removed" '[[ ! -e $wtdir/modules ]]'
   check "sweep: worktree outside .claude/worktrees untouched" '[[ -d $work/fleet-t1 ]]'
 

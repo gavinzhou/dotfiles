@@ -19,7 +19,9 @@ WT_DIR=.claude/worktrees
 GRACE=${WT_GRACE_SECONDS:-3600}
 # Ignored entries that can be rebuilt and do not count as unsaved work. Any
 # other ignored file (.env, notes, local config) keeps the worktree.
-REGEN=" node_modules .venv venv __pycache__ .pytest_cache .mypy_cache .ruff_cache .tox dist build out .next .nuxt .turbo .cache .parcel-cache target DerivedData .build coverage .gradle Pods .DS_Store "
+# Directories only (matched by exact name), plus the files in REGEN_FILES.
+REGEN_DIRS="node_modules .venv venv __pycache__ .pytest_cache .mypy_cache .ruff_cache .tox dist build out .next .nuxt .turbo .cache .parcel-cache target DerivedData .build coverage .gradle Pods"
+REGEN_FILES=".DS_Store"
 CODE_DIR=${WT_CODE_DIR:-$HOME/Code}
 
 usage() {
@@ -75,11 +77,16 @@ ps_ok() { ps -o pid= -p $$ >/dev/null 2>&1; }
 need_ps() { ps_ok || die "查不了进程（ps 不可用），不判断负责人是否还在，什么都不删"; }
 
 # alive <lock reason>: the process named in the reason is still the same process.
+# Gone only when the process is confirmed absent or is a different process;
+# a failed lookup counts as alive.
 alive() {
-  local pid start
+  local pid start now err
   pid=$(reason_pid "$1"); start=$(reason_start "$1")
   [[ -n $pid && -n $start ]] || return 1
-  [[ $(start_of "$pid") == "$start" ]]
+  now=$(start_of "$pid")
+  if [[ -n $now ]]; then [[ $now == "$start" ]]; return; fi
+  err=$(kill -0 "$pid" 2>&1) && return 0
+  [[ $err != *"No such process"* ]]
 }
 
 # ---------- repo and worktree facts ----------
@@ -122,16 +129,28 @@ unsaved() {
   [[ $n =~ ^[0-9]+$ ]] && echo "$n"
 }
 
-# Ignored entries that are not rebuildable (see REGEN), one per line.
+# in_list <word> <list...>: exact match.
+in_list() {
+  local w=$1 x; shift
+  for x in "$@"; do [[ $w == "$x" ]] && return 0; done
+  return 1
+}
+
+# Ignored entries that are not rebuildable (see REGEN_DIRS), one per line.
 kept_ignored() {
   local out line name
   out=$(git -C "$1" status --porcelain --ignored=matching --untracked-files=all 2>/dev/null) || return 1
   while IFS= read -r line; do
     [[ $line == '!! '* ]] || continue
-    line=${line#!! }; line=${line%/}; line=${line#\"}; line=${line%\"}
-    name=${line##*/}
-    [[ $REGEN == *" $name "* ]] && continue
-    echo "$line"
+    line=${line#!! }
+    if [[ $line == */ ]]; then
+      name=${line%/}; name=${name##*/}
+      in_list "$name" $REGEN_DIRS && continue
+    else
+      name=${line##*/}
+      in_list "$name" $REGEN_FILES && continue
+    fi
+    printf '%s\n' "$line"
   done <<<"$out"
   return 0
 }
