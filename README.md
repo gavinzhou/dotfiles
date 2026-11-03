@@ -15,7 +15,7 @@ sh -c "$(curl -fsLS get.chezmoi.io)" -- -b ~/.local/bin init --apply --use-built
 中途需要你做的事：
 
 1. 装 Homebrew 时输入一次开机密码。
-2. 系统弹窗时，给 Karabiner、Ghostty 打开「辅助功能」等权限。
+2. 系统弹窗时，给 Karabiner 打开「辅助功能」等权限。
 3. 运行 `gh auth login`，再运行一次 `chezmoi apply`，记忆仓库就会克隆到 `~/.agents/memory`。
 
 ## 平时

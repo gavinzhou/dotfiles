@@ -38,7 +38,7 @@
   "skipDangerousModePermissionPrompt": true,
   "todoFeatureEnabled": false,
   "agentPushNotifEnabled": true,
-  "preferredNotifChannel": "ghostty",
+  "preferredNotifChannel": "auto",
   "skipAutoPermissionPrompt": true,
   "skipWorkflowUsageWarning": true
 }

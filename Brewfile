@@ -100,7 +100,7 @@ brew "cffi"
 # Apps
 cask "1password"
 cask "1password-cli"
-cask "ghostty"
+cask "zed"
 cask "font-jetbrains-mono"
 cask "karabiner-elements"
 cask "cmd-eikana"

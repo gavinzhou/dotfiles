@@ -73,7 +73,7 @@ _prompt_precmd() {
       local secs=${took%.*}
       if (( secs >= 60 )); then
         RPROMPT="%F{242}took $((secs / 60))m$((secs % 60))s%f"
-        # Desktop notification from Ghostty (shown when the window is not focused)
+        # Desktop notification via OSC 9 (shown when the terminal window is not focused)
         printf '\e]9;%s\a' "Done after $((secs / 60))m$((secs % 60))s: ${_prompt_cmd:0:60}"
       else
         RPROMPT="%F{242}took ${secs}s%f"
