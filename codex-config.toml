@@ -94,9 +94,6 @@ enabled = true
 [plugins."unified-computer-use@openai-bundled"]
 enabled = true
 
-[plugins."code-review@openai-bundled"]
-enabled = true
-
 [plugins."diagram-design@diagram-design"]
 enabled = true
 
