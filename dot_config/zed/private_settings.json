@@ -1,8 +1,8 @@
 // Zed settings (managed by chezmoi: edit dot_config/zed/private_settings.json in the dotfiles repo).
-// Match Rex: Solarized Dark, JetBrains Mono.
+// Tokyo Night theme, JetBrains Mono (same font as Rex).
 {
   "auto_install_extensions": {
-    "solarized": true
+    "tokyo-night": true
   },
   "vim_mode": false,
   "ui_font_size": 16,
@@ -13,7 +13,7 @@
   },
   "theme": {
     "mode": "dark",
-    "light": "Solarized Light",
-    "dark": "Solarized Dark"
+    "light": "Tokyo Night Light",
+    "dark": "Tokyo Night"
   }
 }
