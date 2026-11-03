@@ -1,0 +1,346 @@
+#!/bin/bash
+# wt: git worktrees that always have an owner.
+#
+# Every worktree lives in <repo>/.claude/worktrees/<name> and carries a git
+# lock whose reason names the owning process, in the same format Claude Code
+# uses for its own worktrees:
+#   claude session <name> (pid 38917 start Tue Nov  3 06:00:17 2026)
+#   wt codex <name> task=<task> (pid 4242 start Tue Nov  3 07:00:00 2026)
+# The owner removes the worktree when its task is done (wt done). A session-end
+# hook (wt sweep --mine) and a daily job (wt sweep --notify) remove the ones
+# whose owner is gone, but only when nothing would be lost; the rest are
+# reported, never deleted.
+#
+# Runs on macOS /bin/bash 3.2: no associative arrays, mapfile or ${var,,}.
+set -uo pipefail
+export LC_ALL=C
+
+WT_DIR=.claude/worktrees
+GRACE=${WT_GRACE_SECONDS:-3600}
+CODE_DIR=${WT_CODE_DIR:-$HOME/Code}
+
+usage() {
+  cat <<'EOF'
+用法：
+  wt new <名字> [--task <任务>] [--base <ref>]   建 worktree 并登记负责人，最后一行输出路径
+  wt done [<名字>|<路径>] [--discard]            推送未推送的提交，解锁，删除 worktree
+  wt list [--all] [--attention]                  列出 worktree 和负责人（--all：~/Code 下所有仓库）
+  wt sweep [--mine] [--dry-run] [--notify]       清掉负责人已不在、没有未保存内容的 worktree
+
+只管 <仓库>/.claude/worktrees/ 下的 worktree。有未提交改动或未推送提交时不删，只报告。
+EOF
+}
+
+die() { echo "wt: $*" >&2; exit 1; }
+say() { echo "$(date '+%F %T') $*"; }
+
+# ---------- owner ----------
+
+# Start time of a process as Claude Code writes it: C locale, UTC, spaces squeezed.
+start_of() {
+  TZ=UTC ps -o lstart= -p "$1" 2>/dev/null | tr -s ' ' | sed 's/^ //;s/ $//'
+}
+
+# The agent process this call belongs to: the nearest ancestor named claude or
+# codex. A person typing wt in a terminal owns it through their shell.
+owner_pid() {
+  if [[ -n ${WT_OWNER_PID:-} ]]; then echo "$WT_OWNER_PID"; return; fi
+  local p=$PPID comm
+  while [[ -n $p && $p -gt 1 ]]; do
+    comm=$(ps -o comm= -p "$p" 2>/dev/null) || break
+    case "${comm##*/}" in
+      claude|codex) echo "$p"; return ;;
+    esac
+    p=$(ps -o ppid= -p "$p" 2>/dev/null | tr -d ' ')
+  done
+  echo "$PPID"
+}
+
+owner_name() {
+  local comm
+  comm=$(ps -o comm= -p "$1" 2>/dev/null) || comm=shell
+  comm=${comm##*/}; comm=${comm#-}
+  case "$comm" in claude|codex) echo "$comm" ;; *) echo shell ;; esac
+}
+
+reason_pid() { sed -n 's/.*(pid \([0-9][0-9]*\) start .*)$/\1/p' <<<"$1"; }
+reason_start() { sed -n 's/.*(pid [0-9][0-9]* start \(.*\))$/\1/p' <<<"$1" | tr -s ' '; }
+
+# alive <lock reason>: the process named in the reason is still the same process.
+alive() {
+  local pid start
+  pid=$(reason_pid "$1"); start=$(reason_start "$1")
+  [[ -n $pid && -n $start ]] || return 1
+  [[ $(start_of "$pid") == "$start" ]]
+}
+
+# ---------- repo and worktree facts ----------
+
+# Main working tree of the repo that contains $1 (default: current directory).
+repo_root() {
+  local common
+  common=$(git -C "${1:-.}" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || return 1
+  [[ $(basename "$common") == .git ]] || return 1
+  (cd "$(dirname "$common")" && pwd -P)
+}
+
+# Prints one line per linked worktree under <root>/.claude/worktrees:
+#   <path> <branch or empty> <locked: 0/1> <lock reason> <missing: 0/1>
+# separated by \037: read collapses runs of tabs, and the lock reason may be empty.
+worktrees_of() {
+  local root=$1
+  git -C "$root" worktree list --porcelain 2>/dev/null | awk -v pre="$root/$WT_DIR/" '
+    function flush() { if (p != "" && index(p, pre) == 1) printf "%s\037%s\037%d\037%s\037%d\n", p, b, l, r, m; p=""; b=""; l=0; r=""; m=0 }
+    /^worktree / { flush(); p = substr($0, 10); next }
+    /^branch refs\/heads\// { b = substr($0, 19); next }
+    /^locked/ { l = 1; r = (length($0) > 7) ? substr($0, 8) : ""; next }
+    /^prunable/ { m = 1; next }
+    END { flush() }'
+}
+
+dirty() { [[ -n $(git -C "$1" status --porcelain 2>/dev/null) ]]; }
+
+# Commits in the worktree that exist nowhere else: not on any remote and not on
+# any other local branch.
+unsaved() {
+  local path=$1 branch=$2
+  if [[ -n $branch ]]; then
+    git -C "$path" rev-list --count HEAD --not --remotes --exclude="$branch" --branches 2>/dev/null
+  else
+    git -C "$path" rev-list --count HEAD --not --remotes --branches 2>/dev/null
+  fi
+}
+
+age_of() {
+  local m
+  m=$(stat -f %m "$1" 2>/dev/null || stat -c %Y "$1" 2>/dev/null) || { echo 0; return; }
+  echo $(( $(date +%s) - m ))
+}
+
+# Removes a worktree whose contents are safe, then its local branch when the
+# branch holds nothing that exists only here.
+remove_wt() {
+  local root=$1 path=$2 branch=$3 locked=$4 force=${5:-}
+  if [[ $locked == 1 ]]; then git -C "$root" worktree unlock "$path" 2>/dev/null || true; fi
+  if ! git -C "$root" worktree remove ${force:+"$force"} "$path"; then
+    [[ $locked == 1 ]] && git -C "$root" worktree lock "$path" 2>/dev/null
+    return 1
+  fi
+  if [[ -n $branch ]] && git -C "$root" show-ref --verify --quiet "refs/heads/$branch"; then
+    if [[ $(git -C "$root" rev-list --count "$branch" --not --remotes --exclude="$branch" --branches) == 0 ]]; then
+      git -C "$root" branch -D "$branch" >/dev/null
+    else
+      echo "wt: 分支 $branch 里有别处没有的提交，保留分支" >&2
+    fi
+  fi
+  rmdir "$root/$WT_DIR" "$root/.claude" 2>/dev/null || true
+  return 0
+}
+
+# ---------- commands ----------
+
+cmd_new() {
+  local name="" task="" base=""
+  while (($#)); do
+    case "$1" in
+      --task) task=${2:-}; shift 2 || die "--task 要跟任务说明" ;;
+      --base) base=${2:-}; shift 2 || die "--base 要跟 ref" ;;
+      -*) die "不认识的参数：$1" ;;
+      *) [[ -z $name ]] || die "只能给一个名字"; name=$1; shift ;;
+    esac
+  done
+  [[ $name =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || die "名字只能用字母、数字、. _ -，且不能以符号开头"
+  [[ $task != *")"* && $task != *$'\n'* ]] || die "任务说明里不能有右括号或换行"
+  local root path branch pid
+  root=$(repo_root) || die "当前目录不在 git 仓库里（或是裸仓库）"
+  path="$root/$WT_DIR/$name"; branch="worktree-$name"
+  [[ ! -e $path ]] || die "已存在：$path"
+  git -C "$root" show-ref --verify --quiet "refs/heads/$branch" && die "分支 $branch 已存在"
+
+  # Keep worktrees out of git status without touching tracked files.
+  if ! git -C "$root" check-ignore -q "$WT_DIR/$name"; then
+    local exclude
+    exclude="$(git -C "$root" rev-parse --path-format=absolute --git-common-dir)/info/exclude"
+    mkdir -p "$(dirname "$exclude")"
+    echo "/$WT_DIR/" >> "$exclude"
+  fi
+
+  if [[ -z $base ]]; then
+    if git -C "$root" rev-parse --verify --quiet refs/remotes/origin/HEAD >/dev/null; then
+      base=origin/HEAD
+    else
+      base=HEAD
+    fi
+  fi
+  pid=$(owner_pid)
+  local reason
+  reason="wt $(owner_name "$pid") $name"
+  [[ -z $task ]] || reason="$reason task=$task"
+  reason="$reason (pid $pid start $(start_of "$pid"))"
+  git -C "$root" worktree add -q -b "$branch" "$path" "$base" --lock --reason "$reason" \
+    || die "建 worktree 失败"
+  echo "负责人：$reason" >&2
+  echo "$path"
+}
+
+# Resolves a worktree argument (name, path, or empty = the one we are in) to a
+# line of worktrees_of output.
+find_wt() {
+  local arg=$1 root target line
+  if [[ -z $arg ]]; then
+    target=$(git rev-parse --show-toplevel 2>/dev/null) || die "当前目录不在 git 仓库里"
+    root=$(repo_root) || die "找不到主仓库"
+  elif [[ -d $arg ]]; then
+    target=$(cd "$arg" && pwd -P); root=$(repo_root "$arg") || die "$arg 不在 git 仓库里"
+  else
+    root=$(repo_root) || die "当前目录不在 git 仓库里"; target="$root/$WT_DIR/$arg"
+  fi
+  target=$(cd "$target" 2>/dev/null && pwd -P || echo "$target")
+  root=$(cd "$root" && pwd -P)
+  line=$(worktrees_of "$root" | awk -F'\037' -v t="$target" '$1 == t' | head -1)
+  [[ -n $line ]] || die "$target 不是 $root/$WT_DIR/ 下的 worktree"
+  printf '%s\037%s\n' "$root" "$line"
+}
+
+cmd_done() {
+  local arg="" discard=""
+  while (($#)); do
+    case "$1" in
+      --discard) discard=1; shift ;;
+      -*) die "不认识的参数：$1" ;;
+      *) arg=$1; shift ;;
+    esac
+  done
+  local root path branch locked reason missing
+  IFS=$'\037' read -r root path branch locked reason missing <<<"$(find_wt "$arg")"
+  [[ -n $root ]] || exit 1
+
+  if [[ $locked == 1 ]] && alive "$reason" && [[ $(reason_pid "$reason") != "$(owner_pid)" ]]; then
+    die "负责人还在用：$reason。由负责人自己 wt done"
+  fi
+  if dirty "$path"; then
+    [[ -n $discard ]] || { echo "wt: $path 有未提交的改动。先提交，或确认不要后加 --discard" >&2; exit 2; }
+  fi
+  local n
+  n=$(unsaved "$path" "$branch")
+  if [[ ${n:-0} != 0 ]]; then
+    [[ -n $branch ]] || die "$path 不在分支上，有 $n 个提交只在这里。先建分支再 wt done"
+    echo "wt: 推送 $branch 的 $n 个提交" >&2
+    git -C "$path" push -q -u origin "HEAD:refs/heads/$branch" || die "推送失败，worktree 保留"
+  fi
+  remove_wt "$root" "$path" "$branch" "$locked" ${discard:+--force} || die "删除失败：$path"
+  echo "已删除：$path"
+  case "$PWD/" in "$path"/*) echo "wt: 当前目录已被删除，请 cd $root" >&2 ;; esac
+}
+
+repos() {
+  if [[ ${1:-} == all ]]; then
+    local d
+    for d in "$CODE_DIR"/*/*/; do
+      [[ -d "$d.git" ]] && (cd "$d" && pwd -P)
+    done
+  else
+    local r; r=$(repo_root) || die "当前目录不在 git 仓库里"; (cd "$r" && pwd -P)
+  fi
+}
+
+# status <path> <branch> <missing>: clean | 未提交改动 | N 个未推送提交 | 目录已不在
+status_of() {
+  local path=$1 branch=$2 missing=$3 n
+  if [[ $missing == 1 || ! -d $path ]]; then echo "目录已不在"; return; fi
+  if dirty "$path"; then echo "未提交改动"; return; fi
+  n=$(unsaved "$path" "$branch")
+  if [[ ${n:-0} != 0 ]]; then echo "$n 个未推送提交"; return; fi
+  echo clean
+}
+
+cmd_list() {
+  local scope="" attention=""
+  while (($#)); do
+    case "$1" in
+      --all) scope=all; shift ;;
+      --attention) attention=1; shift ;;
+      *) die "不认识的参数：$1" ;;
+    esac
+  done
+  local root path branch locked reason missing owner st
+  while IFS= read -r root; do
+    while IFS=$'\037' read -r path branch locked reason missing; do
+      [[ -n $path ]] || continue
+      if [[ $locked == 1 ]] && alive "$reason"; then owner="在：$reason"
+      elif [[ $locked == 1 ]]; then owner="已不在：$reason"
+      else owner="没有登记"; fi
+      st=$(status_of "$path" "$branch" "$missing")
+      if [[ -n $attention ]]; then
+        [[ $owner == 在：* || $st == clean || $st == 目录已不在 ]] && continue
+      fi
+      printf '%s\t%s\t%s\n' "$path" "$st" "$owner"
+    done < <(worktrees_of "$root")
+  done < <(repos "$scope")
+}
+
+cmd_sweep() {
+  local mine="" dry="" notify=""
+  while (($#)); do
+    case "$1" in
+      --mine) mine=1; shift ;;
+      --dry-run) dry=1; shift ;;
+      --notify) notify=1; shift ;;
+      *) die "不认识的参数：$1" ;;
+    esac
+  done
+  local me="" scope=all
+  if [[ -n $mine ]]; then me=$(owner_pid); scope=""; fi
+  local root path branch locked reason missing st removed=0 kept=0
+  local attention=()
+  while IFS= read -r root; do
+    while IFS=$'\037' read -r path branch locked reason missing; do
+      [[ -n $path ]] || continue
+      if [[ -n $mine ]]; then
+        # Session end: only worktrees this session owns.
+        [[ $locked == 1 && $(reason_pid "$reason") == "$me" ]] || continue
+      elif [[ $locked == 1 ]] && alive "$reason"; then
+        continue
+      elif [[ $locked == 0 || -z $(reason_pid "$reason") ]] && [[ $missing == 0 ]] \
+        && (( $(age_of "$path") < GRACE )); then
+        # No owner recorded and recently touched: may be mid-handoff.
+        continue
+      fi
+      st=$(status_of "$path" "$branch" "$missing")
+      if [[ $st == clean || $st == 目录已不在 ]]; then
+        if [[ -n $dry ]]; then
+          say "会删除：$path（$st）"
+        elif [[ $st == 目录已不在 ]]; then
+          git -C "$root" worktree unlock "$path" 2>/dev/null || true
+          git -C "$root" worktree prune
+          say "已清理（目录已不在）：$path"; removed=$((removed + 1))
+        elif remove_wt "$root" "$path" "$branch" "$locked"; then
+          say "已删除：$path"; removed=$((removed + 1))
+        else
+          say "删除失败：$path"; attention+=("$path（删除失败）")
+        fi
+      else
+        [[ -n $mine ]] && { say "保留：$path（$st）"; kept=$((kept + 1)); continue; }
+        say "需要处理：$path（$st，负责人：${reason:-没有登记}）"
+        attention+=("$path（$st）")
+      fi
+    done < <(worktrees_of "$root")
+  done < <(repos "$scope")
+
+  if [[ -n $notify ]] && (( ${#attention[@]} > 0 )); then
+    local msg="${#attention[@]} 个 worktree 没人负责、还有未保存的改动。运行 wt list --all --attention 查看"
+    osascript -e "display notification \"$msg\" with title \"worktree\"" >/dev/null 2>&1 || true
+  fi
+  [[ -n $mine ]] || say "完成：删除 $removed 个，需要处理 ${#attention[@]} 个"
+  [[ -z $mine || $kept == 0 ]] || say "本会话有 $kept 个 worktree 有未保存内容，已保留"
+  return 0
+}
+
+case "${1:-}" in
+  new) shift; cmd_new "$@" ;;
+  done) shift; cmd_done "$@" ;;
+  list) shift; cmd_list "$@" ;;
+  sweep) shift; cmd_sweep "$@" ;;
+  -h|--help|help|"") usage ;;
+  *) usage >&2; exit 1 ;;
+esac

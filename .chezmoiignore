@@ -7,3 +7,5 @@ secrets.zsh.tpl
 claude-settings.json
 codex-config.toml
 test-agent-config.sh
+test-wt.sh
+wt

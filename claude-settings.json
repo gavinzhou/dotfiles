@@ -11,6 +11,7 @@
     "cc-plugin-you-should-know@builtin": true,
     "codex-fleet@gavinzhou": true,
     "fleet-panel@gavinzhou": true,
+    "worktree-keeper@gavinzhou": true,
     "swift-lsp@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {

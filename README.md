@@ -63,6 +63,24 @@ git switch master && git merge --ff-only <分支> && git push origin master
 | `test-agent-config.sh` | 上面两个合并脚本的测试（CI 里跑） |
 | `run_after_40-agents.sh` | 建 `~/Code/<组>`，装 Claude Code，克隆记忆仓库 |
 | `run_onchange_after_50-dotfiles-sync.sh` | 安装每天的自动同步任务 |
+| `wt` + `run_onchange_after_60-wt.sh.tmpl` | 有负责人的 git worktree 命令，装到 `~/.local/bin/wt`，并安装每天 9:30 的清扫任务（见下面「worktree」） |
+| `test-wt.sh` | `wt` 的测试（CI 里用 bash 和 macOS 自带的 bash 3.2 各跑一次） |
+
+## worktree
+
+每个 worktree 都有一个负责的 agent：要用时建，用完由它删。规则在记忆仓库的 `GLOBAL_RULES.md`。
+
+| 想做的事 | 命令 |
+|---|---|
+| 建一个（Codex、人；Claude 用自带的 `claude -w` / `EnterWorktree`） | `wt new <名字> --task <仓库#Issue>` |
+| 做完删掉（先推送只在这里的提交） | `wt done [<名字>]`，有未提交改动时会拒绝，确认不要再加 `--discard` |
+| 看本仓库 / 所有仓库的 worktree 和负责人 | `wt list` / `wt list --all` |
+| 只看没人负责、还有未保存内容的 | `wt list --all --attention` |
+
+- 位置固定在 `<仓库>/.claude/worktrees/<名字>`，分支 `worktree-<名字>`，和 Claude Code 自带的一样。别的位置的 worktree（如 codex-fleet 的）`wt` 不管。
+- 负责人记在 git 锁的说明里，格式和 Claude Code 自己的锁一样：`(pid 进程号 start 进程启动时间)`。进程号和启动时间都对得上，才算负责人还在。
+- 每天 9:30 `wt sweep --notify`：负责人已不在、没有未提交改动、也没有只在这里的提交的，删掉；其余的不删，发系统通知。没登记负责人的，一小时内不动。日志在 `~/Library/Logs/wt-sweep.log`。
+- Claude 会话结束时，插件 worktree-keeper 运行 `wt sweep --mine`，删掉本会话负责、而且干净的 worktree。
 
 ## 技能
 

@@ -24,6 +24,7 @@ jobs:
           for f in run_*.tmpl; do chezmoi --source "$PWD" execute-template < "$f" | bash -n; done
           # shellcheck disable=SC2016
           sed -n '/^cat > "$bin.new" <<.EOF./,/^EOF$/p' run_onchange_after_50-dotfiles-sync.sh | sed '1d;$d' | bash -n
+          bash -n wt
           zsh -n dot_zshenv
           zsh -n dot_zprofile
           zsh -n dot_zshrc
@@ -32,6 +33,11 @@ jobs:
         run: |
           brew install jq yq
           bash test-agent-config.sh
+
+      - name: Test wt
+        run: |
+          bash test-wt.sh
+          /bin/bash test-wt.sh
 
       - name: Check Brewfile parses
         run: brew bundle list --all --file=Brewfile > /dev/null

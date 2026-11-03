@@ -1,0 +1,55 @@
+#!/bin/bash
+# Installs wt and its daily sweep. Runs again whenever wt or this file changes.
+# wt sha256: {{ include "wt" | sha256sum }}
+set -euo pipefail
+
+src={{ .chezmoi.sourceDir | quote }}
+bin="$HOME/.local/bin/wt"
+plist="$HOME/Library/LaunchAgents/com.gavinzhou.wt-sweep.plist"
+mkdir -p "$(dirname "$bin")" "$(dirname "$plist")" "$HOME/Library/Logs"
+
+# Copy and rename, so a sweep running right now keeps reading the old file.
+install -m 755 "$src/wt" "$bin.new"
+mv -f "$bin.new" "$bin"
+
+cat > "$plist.new" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.gavinzhou.wt-sweep</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>$bin</string>
+        <string>sweep</string>
+        <string>--notify</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>9</integer>
+        <key>Minute</key>
+        <integer>30</integer>
+    </dict>
+    <key>StandardOutPath</key>
+    <string>$HOME/Library/Logs/wt-sweep.log</string>
+    <key>StandardErrorPath</key>
+    <string>$HOME/Library/Logs/wt-sweep.log</string>
+</dict>
+</plist>
+EOF
+
+label=com.gavinzhou.wt-sweep
+if cmp -s "$plist.new" "$plist" && launchctl print "gui/$UID/$label" >/dev/null 2>&1; then
+  rm -f "$plist.new"
+  exit 0
+fi
+mv -f "$plist.new" "$plist"
+launchctl bootout "gui/$UID/$label" 2>/dev/null || true
+launchctl bootstrap "gui/$UID" "$plist"
