@@ -79,7 +79,10 @@ git switch master && git merge --ff-only <分支> && git push origin master
 
 - 位置固定在 `<仓库>/.claude/worktrees/<名字>`，分支 `worktree-<名字>`，和 Claude Code 自带的一样。别的位置的 worktree（如 codex-fleet 的）`wt` 不管。
 - 负责人记在 git 锁的说明里，格式和 Claude Code 自己的锁一样：`(pid 进程号 start 进程启动时间)`。进程号和启动时间都对得上，才算负责人还在。
-- 每天 9:30 `wt sweep --notify`：负责人已不在、没有未提交改动、也没有只在这里的提交的，删掉；其余的不删，发系统通知。没登记负责人的，一小时内不动。日志在 `~/Library/Logs/wt-sweep.log`。
+- 每天 9:30 `wt sweep --notify`：负责人已不在、而且干净的，删掉；其余的不删，发系统通知。日志在 `~/Library/Logs/wt-sweep.log`。
+  - 「干净」是指：没有未提交改动（不受仓库 `status.showUntrackedFiles` 设置影响），没有被 git 忽略的文件（`.env`、笔记等；`node_modules`、`.venv`、`dist`、`build` 这类能重新生成的目录不算），也没有只在这里的提交。任何检查失败都算不干净。
+  - 没登记负责人的，一小时内不动。目录被手动删掉的只报告，不清理（它的索引和 HEAD 里可能还有东西）。
+  - `ps` 用不了（比如在沙箱里）时，不判断负责人是否还在，什么都不删。
 - Claude 会话结束时，插件 worktree-keeper 运行 `wt sweep --mine`，删掉本会话负责、而且干净的 worktree。
 
 ## 技能

@@ -17,6 +17,9 @@ export LC_ALL=C
 
 WT_DIR=.claude/worktrees
 GRACE=${WT_GRACE_SECONDS:-3600}
+# Ignored entries that can be rebuilt and do not count as unsaved work. Any
+# other ignored file (.env, notes, local config) keeps the worktree.
+REGEN=" node_modules .venv venv __pycache__ .pytest_cache .mypy_cache .ruff_cache .tox dist build out .next .nuxt .turbo .cache .parcel-cache target DerivedData .build coverage .gradle Pods .DS_Store "
 CODE_DIR=${WT_CODE_DIR:-$HOME/Code}
 
 usage() {
@@ -66,6 +69,11 @@ owner_name() {
 reason_pid() { sed -n 's/.*(pid \([0-9][0-9]*\) start .*)$/\1/p' <<<"$1"; }
 reason_start() { sed -n 's/.*(pid [0-9][0-9]* start \(.*\))$/\1/p' <<<"$1" | tr -s ' '; }
 
+# ps must work before anyone is declared gone: inside a sandbox it may be
+# refused, and a refusal must not look like a dead owner.
+ps_ok() { ps -o pid= -p $$ >/dev/null 2>&1; }
+need_ps() { ps_ok || die "查不了进程（ps 不可用），不判断负责人是否还在，什么都不删"; }
+
 # alive <lock reason>: the process named in the reason is still the same process.
 alive() {
   local pid start
@@ -87,10 +95,14 @@ repo_root() {
 # Prints one line per linked worktree under <root>/.claude/worktrees:
 #   <path> <branch or empty> <locked: 0/1> <lock reason> <missing: 0/1>
 # separated by \037: read collapses runs of tabs, and the lock reason may be empty.
+# Reads -z output: without it git C-quotes reasons and paths with non-ASCII
+# characters, and the pid could not be found.
 worktrees_of() {
   local root=$1
-  git -C "$root" worktree list --porcelain 2>/dev/null | awk -v pre="$root/$WT_DIR/" '
+  git -C "$root" worktree list --porcelain -z 2>/dev/null | tr '\000' '\036' | awk -v pre="$root/$WT_DIR/" '
+    BEGIN { RS = "\036" }
     function flush() { if (p != "" && index(p, pre) == 1) printf "%s\037%s\037%d\037%s\037%d\n", p, b, l, r, m; p=""; b=""; l=0; r=""; m=0 }
+    $0 == "" { flush(); next }
     /^worktree / { flush(); p = substr($0, 10); next }
     /^branch refs\/heads\// { b = substr($0, 19); next }
     /^locked/ { l = 1; r = (length($0) > 7) ? substr($0, 8) : ""; next }
@@ -98,17 +110,30 @@ worktrees_of() {
     END { flush() }'
 }
 
-dirty() { [[ -n $(git -C "$1" status --porcelain 2>/dev/null) ]]; }
-
 # Commits in the worktree that exist nowhere else: not on any remote and not on
-# any other local branch.
+# any other local branch. Prints nothing when git fails.
 unsaved() {
-  local path=$1 branch=$2
+  local path=$1 branch=$2 n
   if [[ -n $branch ]]; then
-    git -C "$path" rev-list --count HEAD --not --remotes --exclude="$branch" --branches 2>/dev/null
+    n=$(git -C "$path" rev-list --count HEAD --not --remotes --exclude="$branch" --branches 2>/dev/null) || return 1
   else
-    git -C "$path" rev-list --count HEAD --not --remotes --branches 2>/dev/null
+    n=$(git -C "$path" rev-list --count HEAD --not --remotes --branches 2>/dev/null) || return 1
   fi
+  [[ $n =~ ^[0-9]+$ ]] && echo "$n"
+}
+
+# Ignored entries that are not rebuildable (see REGEN), one per line.
+kept_ignored() {
+  local out line name
+  out=$(git -C "$1" status --porcelain --ignored=matching --untracked-files=all 2>/dev/null) || return 1
+  while IFS= read -r line; do
+    [[ $line == '!! '* ]] || continue
+    line=${line#!! }; line=${line%/}; line=${line#\"}; line=${line%\"}
+    name=${line##*/}
+    [[ $REGEN == *" $name "* ]] && continue
+    echo "$line"
+  done <<<"$out"
+  return 0
 }
 
 age_of() {
@@ -120,10 +145,10 @@ age_of() {
 # Removes a worktree whose contents are safe, then its local branch when the
 # branch holds nothing that exists only here.
 remove_wt() {
-  local root=$1 path=$2 branch=$3 locked=$4 force=${5:-}
+  local root=$1 path=$2 branch=$3 locked=$4 reason=$5 force=${6:-}
   if [[ $locked == 1 ]]; then git -C "$root" worktree unlock "$path" 2>/dev/null || true; fi
   if ! git -C "$root" worktree remove ${force:+"$force"} "$path"; then
-    [[ $locked == 1 ]] && git -C "$root" worktree lock "$path" 2>/dev/null
+    [[ $locked == 1 ]] && git -C "$root" worktree lock --reason "$reason" "$path" 2>/dev/null
     return 1
   fi
   if [[ -n $branch ]] && git -C "$root" show-ref --verify --quiet "refs/heads/$branch"; then
@@ -173,6 +198,7 @@ cmd_new() {
     fi
   fi
   pid=$(owner_pid)
+  [[ -n $(start_of "$pid") ]] || die "查不到负责人进程 $pid 的启动时间（ps 不可用？），不建"
   local reason
   reason="wt $(owner_name "$pid") $name"
   [[ -z $task ]] || reason="$reason task=$task"
@@ -215,20 +241,29 @@ cmd_done() {
   IFS=$'\037' read -r root path branch locked reason missing <<<"$(find_wt "$arg")"
   [[ -n $root ]] || exit 1
 
+  [[ $locked == 0 ]] || need_ps
   if [[ $locked == 1 ]] && alive "$reason" && [[ $(reason_pid "$reason") != "$(owner_pid)" ]]; then
     die "负责人还在用：$reason。由负责人自己 wt done"
   fi
-  if dirty "$path"; then
-    [[ -n $discard ]] || { echo "wt: $path 有未提交的改动。先提交，或确认不要后加 --discard" >&2; exit 2; }
-  fi
-  local n
-  n=$(unsaved "$path" "$branch")
-  if [[ ${n:-0} != 0 ]]; then
+  local st n
+  st=$(status_of "$path" "$branch" "$missing")
+  case "$st" in
+    目录已不在|检查失败) die "$path：$st，没有删除" ;;
+    未提交改动|被忽略的文件)
+      if [[ -z $discard ]]; then
+        echo "wt: $path 有$st（git status --ignored 查看）。先提交，或确认不要后加 --discard" >&2
+        exit 2
+      fi ;;
+  esac
+  n=$(unsaved "$path" "$branch") || die "检查只在这里的提交失败，worktree 保留"
+  if [[ $n != 0 ]]; then
     [[ -n $branch ]] || die "$path 不在分支上，有 $n 个提交只在这里。先建分支再 wt done"
     echo "wt: 推送 $branch 的 $n 个提交" >&2
     git -C "$path" push -q -u origin "HEAD:refs/heads/$branch" || die "推送失败，worktree 保留"
+    n=$(unsaved "$path" "$branch") || die "推送后检查失败，worktree 保留"
+    [[ $n == 0 ]] || die "推送后仍有 $n 个提交只在这里，worktree 保留"
   fi
-  remove_wt "$root" "$path" "$branch" "$locked" ${discard:+--force} || die "删除失败：$path"
+  remove_wt "$root" "$path" "$branch" "$locked" "$reason" ${discard:+--force} || die "删除失败：$path"
   echo "已删除：$path"
   case "$PWD/" in "$path"/*) echo "wt: 当前目录已被删除，请 cd $root" >&2 ;; esac
 }
@@ -244,13 +279,19 @@ repos() {
   fi
 }
 
-# status <path> <branch> <missing>: clean | 未提交改动 | N 个未推送提交 | 目录已不在
+# status <path> <branch> <missing>:
+#   clean | 未提交改动 | 被忽略的文件 | N 个未推送提交 | 目录已不在 | 检查失败
+# Only "clean" may be deleted without --discard. Any git failure is 检查失败.
 status_of() {
-  local path=$1 branch=$2 missing=$3 n
+  local path=$1 branch=$2 missing=$3 out n
   if [[ $missing == 1 || ! -d $path ]]; then echo "目录已不在"; return; fi
-  if dirty "$path"; then echo "未提交改动"; return; fi
-  n=$(unsaved "$path" "$branch")
-  if [[ ${n:-0} != 0 ]]; then echo "$n 个未推送提交"; return; fi
+  # --untracked-files=all: a repo may hide untracked files with status.showUntrackedFiles=no.
+  out=$(git -C "$path" status --porcelain --untracked-files=all 2>/dev/null) || { echo "检查失败"; return; }
+  if [[ -n $out ]]; then echo "未提交改动"; return; fi
+  out=$(kept_ignored "$path") || { echo "检查失败"; return; }
+  if [[ -n $out ]]; then echo "被忽略的文件"; return; fi
+  n=$(unsaved "$path" "$branch") || { echo "检查失败"; return; }
+  if [[ $n != 0 ]]; then echo "$n 个未推送提交"; return; fi
   echo clean
 }
 
@@ -263,16 +304,18 @@ cmd_list() {
       *) die "不认识的参数：$1" ;;
     esac
   done
-  local root path branch locked reason missing owner st
+  local root path branch locked reason missing owner st psok=1
+  ps_ok || psok=""
   while IFS= read -r root; do
     while IFS=$'\037' read -r path branch locked reason missing; do
       [[ -n $path ]] || continue
-      if [[ $locked == 1 ]] && alive "$reason"; then owner="在：$reason"
+      if [[ $locked == 1 && -z $psok ]]; then owner="不知道（ps 不可用）：$reason"
+      elif [[ $locked == 1 ]] && alive "$reason"; then owner="在：$reason"
       elif [[ $locked == 1 ]]; then owner="已不在：$reason"
       else owner="没有登记"; fi
       st=$(status_of "$path" "$branch" "$missing")
       if [[ -n $attention ]]; then
-        [[ $owner == 在：* || $st == clean || $st == 目录已不在 ]] && continue
+        [[ $owner == 在：* || $owner == 不知道* || $st == clean ]] && continue
       fi
       printf '%s\t%s\t%s\n' "$path" "$st" "$owner"
     done < <(worktrees_of "$root")
@@ -289,16 +332,17 @@ cmd_sweep() {
       *) die "不认识的参数：$1" ;;
     esac
   done
-  local me="" scope=all
-  if [[ -n $mine ]]; then me=$(owner_pid); scope=""; fi
+  local me="" mestart="" scope=all
+  need_ps
+  if [[ -n $mine ]]; then me=$(owner_pid); mestart=$(start_of "$me"); scope=""; fi
   local root path branch locked reason missing st removed=0 kept=0
   local attention=()
   while IFS= read -r root; do
     while IFS=$'\037' read -r path branch locked reason missing; do
       [[ -n $path ]] || continue
       if [[ -n $mine ]]; then
-        # Session end: only worktrees this session owns.
-        [[ $locked == 1 && $(reason_pid "$reason") == "$me" ]] || continue
+        # Session end: only worktrees this session owns (same pid and start time).
+        [[ $locked == 1 && $(reason_pid "$reason") == "$me" && $(reason_start "$reason") == "$mestart" ]] || continue
       elif [[ $locked == 1 ]] && alive "$reason"; then
         continue
       elif [[ $locked == 0 || -z $(reason_pid "$reason") ]] && [[ $missing == 0 ]] \
@@ -307,14 +351,13 @@ cmd_sweep() {
         continue
       fi
       st=$(status_of "$path" "$branch" "$missing")
-      if [[ $st == clean || $st == 目录已不在 ]]; then
+      # A worktree whose directory was deleted by hand is only reported: its
+      # index and HEAD may still hold work, and git worktree prune would also
+      # touch worktrees outside .claude/worktrees.
+      if [[ $st == clean ]]; then
         if [[ -n $dry ]]; then
-          say "会删除：$path（$st）"
-        elif [[ $st == 目录已不在 ]]; then
-          git -C "$root" worktree unlock "$path" 2>/dev/null || true
-          git -C "$root" worktree prune
-          say "已清理（目录已不在）：$path"; removed=$((removed + 1))
-        elif remove_wt "$root" "$path" "$branch" "$locked"; then
+          say "会删除：$path"
+        elif remove_wt "$root" "$path" "$branch" "$locked" "$reason"; then
           say "已删除：$path"; removed=$((removed + 1))
         else
           say "删除失败：$path"; attention+=("$path（删除失败）")

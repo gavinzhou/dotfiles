@@ -3,7 +3,7 @@
 # wt sha256: {{ include "wt" | sha256sum }}
 set -euo pipefail
 
-src={{ .chezmoi.sourceDir | quote }}
+src={{ .chezmoi.sourceDir | shellQuote }}
 bin="$HOME/.local/bin/wt"
 plist="$HOME/Library/LaunchAgents/com.gavinzhou.wt-sweep.plist"
 mkdir -p "$(dirname "$bin")" "$(dirname "$plist")" "$HOME/Library/Logs"
