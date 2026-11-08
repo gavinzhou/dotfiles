@@ -16,6 +16,7 @@ sh -c "$(curl -fsLS get.chezmoi.io)" -- -b ~/.local/bin init --apply --use-built
 
 1. 装 Homebrew 时输入一次开机密码。
 2. 系统弹窗时，给 Karabiner 打开「辅助功能」等权限。
+   左右 ⌘ 单按切换英数/かな的规则来自仓库，只在本机还没有 `~/.config/karabiner/karabiner.json` 时写入；之后在 Karabiner 里改的设置留在本机，不会被覆盖。
 3. 运行 `gh auth login`，再运行一次 `chezmoi apply`，记忆仓库就会克隆到 `~/.agents/memory`。
 
 ## 平时
