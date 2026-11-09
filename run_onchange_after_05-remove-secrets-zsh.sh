@@ -6,7 +6,12 @@
 set -euo pipefail
 
 f="$HOME/.secrets.zsh"
-if [[ -f $f ]] && head -n 1 "$f" | grep -q '^# Generated from 1Password (vault gavin, item "dotfiles/.secrets.zsh")'; then
+[[ -f $f ]] || exit 0
+# Fail when it cannot be read, so chezmoi runs this again next time.
+[[ -r $f ]] || { echo "dotfiles: cannot read ~/.secrets.zsh; not removed" >&2; exit 1; }
+first=
+IFS= read -r first < "$f" || true
+if [[ $first == '# Generated from 1Password (vault gavin, item "dotfiles/.secrets.zsh")'* ]]; then
   rm -f "$f"
-  echo "dotfiles: removed the generated ~/.secrets.zsh" >&2
+  echo "dotfiles: removed the generated ~/.secrets.zsh. Terminals and agent apps already open still carry SLACK_MCP_TOKEN / STITCH_API_KEY; restart them." >&2
 fi
