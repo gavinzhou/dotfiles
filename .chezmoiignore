@@ -3,7 +3,6 @@ LICENSE
 Brewfile
 *.html
 *.svg
-secrets.zsh.tpl
 claude-settings.json
 codex-config.toml
 test-agent-config.sh

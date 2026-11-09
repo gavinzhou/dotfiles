@@ -52,7 +52,7 @@ git switch master && git merge --ff-only <分支> && git push origin master
 | `dot_gitconfig-sign-commits`、`dot_git_allowed_signers` | 本仓库提交必须签名；签名验证用的公钥 |
 | `Brewfile` | 软件清单 |
 | `.install-prereqs.sh` | 每次运行 chezmoi 前执行，确保 Homebrew 和 1Password 已安装 |
-| `run_onchange_after_05-secrets.sh.tmpl` | `secrets.zsh.tpl` 改动后，用 `op inject` 从 1Password 生成 `~/.secrets.zsh` |
+| `run_onchange_after_05-remove-secrets-zsh.sh` | 删掉以前从 1Password 生成的 `~/.secrets.zsh`（它把密钥放进了每个 shell 的环境变量） |
 | `run_onchange_after_10-brew-bundle.sh.tmpl` | Brewfile 改动后装软件 |
 | `run_onchange_after_20-macos.sh` | 系统设置：Dock、Finder、轻点点按、大写锁定键改 Control |
 | `run_onchange_after_25-1password-ssh.sh` | 让 1Password SSH agent 提供 `gavin` 库里的密钥 |
@@ -104,7 +104,7 @@ git switch master && git merge --ff-only <分支> && git push origin master
 
 这个仓库是公开的。密钥和只属于这台机器的设置放在：
 
-- `~/.secrets.zsh`（权限 600）：token 等密钥。由 `secrets.zsh.tpl` 从 1Password 生成，仓库里只有引用，没有值。
+- 密钥不放进环境变量：每个 shell 和 agent 起的子进程都会带上。命令确实要用时，用 `op run --env-file` 只在那一次注入。
 - `~/.zshenv.local`：不是密钥、但也不适合公开的环境变量（所有 zsh 都会读，只能写变量赋值）。
 - `~/.zshrc.local`：只给交互终端用的本机设置。
 - `~/.claude/settings.json` 的 `autoMode`：写了内部仓库和生产环境的说明，只留在本机。

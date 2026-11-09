@@ -112,10 +112,10 @@ elif [[ -n ${DOTFILES_AGENT_VARS:-} ]]; then
 fi
 unset _v _dotfiles_agent_vars
 
-# Secrets and machine-specific variables live outside this public repo:
-# ~/.secrets.zsh (chmod 600, generated from 1Password) and ~/.zshenv.local.
-# Both must only assign variables: every zsh, every script, reads them.
-[[ -r ~/.secrets.zsh ]] && source ~/.secrets.zsh
+# Machine-specific variables live outside this public repo, in ~/.zshenv.local.
+# It must only assign variables: every zsh, every script, reads it. No secrets
+# here: every agent subprocess inherits them. A command that needs one gets it
+# for that run only, with `op run --env-file`.
 [[ -r ~/.zshenv.local ]] && source ~/.zshenv.local
 
 # Login shells: /etc/zprofile (path_helper) runs after this file and moves
