@@ -4,6 +4,7 @@
 
 tap "antoniorodr/memo"
 tap "dashlane/tap"
+tap "deepanshumishraa/tap"
 tap "espressif/eim"
 tap "kreuzwerker/taps"
 tap "mobile-dev-inc/tap"
@@ -28,6 +29,7 @@ brew "wget"
 brew "yq"
 brew "mole"
 brew "antoniorodr/memo/memo", trusted: true
+brew "deepanshumishraa/tap/leaf", trusted: true
 
 # Signing and secrets
 brew "gnupg"
