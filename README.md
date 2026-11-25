@@ -63,6 +63,7 @@ git switch master && git merge --ff-only <分支> && git push origin master
 | `dot_agents/dot_skill-lock.json` | `npx skills` 装过的技能清单 |
 | `test-agent-config.sh` | 上面两个合并脚本的测试（CI 里跑） |
 | `run_after_40-agents.sh` | 建 `~/Code/<组>`，装 Claude Code，克隆记忆仓库 |
+| `run_after_45-leaf-rex.sh` | 把 leaf 加进 Rex 的命令面板（`leaf rex install`）；Rex 配置已指向当前的 leaf 时跳过，没装 Rex 时提示装好后再 `chezmoi apply` |
 | `run_onchange_after_50-dotfiles-sync.sh` | 安装每天的自动同步任务 |
 | `wt` + `run_onchange_after_60-wt.sh.tmpl` | 有负责人的 git worktree 命令，装到 `~/.local/bin/wt`，并安装每天 9:30 的清扫任务（见下面「worktree」） |
 | `test-wt.sh` | `wt` 的测试（CI 里用 bash 和 macOS 自带的 bash 3.2 各跑一次） |
