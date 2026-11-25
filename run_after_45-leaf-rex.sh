@@ -20,7 +20,10 @@ if [[ ! -d $rex_dir ]]; then
 fi
 
 # Already set up with this leaf: nothing to do (installing again reloads Rex).
-if [[ -f $plugin && -f $config ]] && grep -qF "bin = { \"$leaf\" }" "$config"; then
+# Match the whole line leaf writes, so a comment or another plugin's line with
+# the same path doesn't count.
+if [[ -f $plugin && -f $config ]] &&
+  grep -qxF "dofile(\"$plugin\").setup({ bin = { \"$leaf\" } })" "$config"; then
   exit 0
 fi
 
